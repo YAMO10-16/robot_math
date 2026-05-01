@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ロボット算数RPG</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Courier New',monospace;background:#0d0f1a;min-height:100vh;color:#e8eaf6;}
+#app{max-width:480px;margin:0 auto;background:#0d0f1a;min-height:100vh;position:relative;overflow:hidden;}
+#bg-layer{position:absolute;inset:0;z-index:0;transition:opacity 0.8s;}
+#game{position:relative;z-index:1;}
+
+/* TOP BAR */
+.top-bar{background:rgba(10,12,28,0.88);padding:6px 10px;display:flex;align-items:center;gap:6px;border-bottom:0.5px solid #2a3060;backdrop-filter:blur(4px);}
+.lv-badge{font-size:10px;color:#a29bfe;background:#1a1e3a;border:0.5px solid #2a3060;border-radius:20px;padding:2px 8px;white-space:nowrap;}
+.xp-wrap{flex:1;}
+.xp-bar-bg{height:4px;background:#1e2240;border-radius:2px;overflow:hidden;}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,#4a6fff,#a29bfe);border-radius:2px;transition:width 0.4s;}
+.xp-lbl{font-size:9px;color:#7888bb;margin-top:1px;}
+.kill-badge{font-size:10px;color:#6ee7b7;background:#052e1e;border:0.5px solid #34d399;border-radius:20px;padding:2px 8px;white-space:nowrap;}
+.streak{font-size:10px;color:#fcd34d;background:#2a2010;border:0.5px solid #5a4010;border-radius:20px;padding:2px 8px;white-space:nowrap;}
+.bgm-btn{font-size:10px;color:#7888bb;background:#1a1e3a;border:0.5px solid #2a3060;border-radius:20px;padding:2px 8px;cursor:pointer;white-space:nowrap;}
+.bgm-btn.on{color:#fcd34d;border-color:#5a4010;}
+.inv-btn{font-size:10px;color:#a29bfe;background:#1a1e3a;border:0.5px solid #2a3060;border-radius:20px;padding:2px 8px;cursor:pointer;white-space:nowrap;}
+.inv-btn:hover{border-color:#4a6fff;}
+
+/* STAGE SEL */
+.stage-sel{display:flex;gap:4px;flex-wrap:wrap;padding:6px 8px;justify-content:center;}
+.stage-btn{padding:4px 8px;border-radius:8px;font-size:10px;font-weight:700;border:0.5px solid #2a3060;background:#1a1e3a;color:#3a4060;cursor:not-allowed;font-family:'Courier New',monospace;transition:all 0.15s;}
+.stage-btn.unlocked{color:#7888bb;cursor:pointer;}
+.stage-btn.unlocked:hover{border-color:#4a6fff;color:#93c5fd;}
+.stage-btn.active{border-color:#4a6fff;background:#1a2060;color:#93c5fd;cursor:pointer;}
+.stage-btn.boss.active{background:#2a0a0a;border-color:#c0392b;color:#f87171;}
+.stage-btn.boss.unlocked{border-color:#5a2020;color:#c07070;}
+.lock-icon{font-size:9px;margin-left:2px;opacity:0.5;}
+
+/* BATTLE */
+.battle-area{background:rgba(10,14,30,0.78);margin:6px 8px;border-radius:12px;border:0.5px solid #2a3060;padding:8px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(2px);position:relative;overflow:hidden;}
+.rbox{text-align:center;width:90px;}
+.rname{font-size:10px;color:#7888bb;margin:3px 0 2px;}
+.hp-bg{height:4px;background:#1e2240;border-radius:2px;overflow:hidden;margin-bottom:2px;}
+.hp-fill{height:100%;border-radius:2px;transition:width 0.3s;}
+.hp-lbl{font-size:9px;color:#7888bb;}
+.kill-count{font-size:9px;color:#6ee7b7;margin-top:1px;}
+.vs-mid{text-align:center;flex:1;}
+.vs-txt{font-size:16px;font-weight:700;color:#4a6fff;letter-spacing:0.1em;}
+.vs-sub{font-size:9px;color:#7888bb;margin-top:2px;}
+
+#p-robot-wrap,#e-robot-wrap{display:inline-block;}
+#e-robot-wrap.hit{animation:eHit 0.4s ease;}
+#p-robot-wrap.hit{animation:pHit 0.35s ease;}
+@keyframes eHit{0%{transform:translateX(0);}15%{transform:translateX(-14px) rotate(-5deg);}35%{transform:translateX(10px) rotate(3deg);}55%{transform:translateX(-7px);}75%{transform:translateX(5px);}100%{transform:translateX(0) rotate(0);}}
+@keyframes pHit{0%{transform:translateX(0);}20%{transform:translateX(10px);}50%{transform:translateX(-8px);}80%{transform:translateX(5px);}100%{transform:translateX(0);}}
+.dmg-num{position:absolute;pointer-events:none;z-index:20;font-weight:700;animation:dmgF 1s ease forwards;}
+@keyframes dmgF{0%{opacity:1;transform:translateY(0) scale(1.4);}60%{opacity:1;transform:translateY(-36px) scale(1);}100%{opacity:0;transform:translateY(-56px) scale(0.7);}}
+.particle{position:absolute;pointer-events:none;z-index:18;border-radius:50%;animation:partF 0.7s ease forwards;}
+@keyframes partF{0%{opacity:1;transform:translate(0,0) scale(1);}100%{opacity:0;transform:var(--end) scale(0);}}
+.flash-overlay{position:absolute;inset:0;border-radius:12px;pointer-events:none;z-index:16;opacity:0;animation:flashA 0.35s ease forwards;}
+@keyframes flashA{0%{opacity:0;}15%{opacity:0.5;}100%{opacity:0;}}
+.slash-wrap{position:absolute;pointer-events:none;z-index:15;animation:slashW 0.5s ease forwards;}
+@keyframes slashW{0%{opacity:1;transform:scale(0.4) rotate(-30deg);}40%{opacity:1;transform:scale(1.4) rotate(8deg);}100%{opacity:0;transform:scale(1.8) rotate(15deg);}}
+
+/* DROP BANNER */
+.drop-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;background:#111528;border-radius:12px;padding:16px 20px;text-align:center;animation:dropIn 0.4s ease;min-width:200px;max-width:280px;}
+.drop-banner.common{border:1px solid #7888bb;}
+.drop-banner.rare{border:1px solid #4a6fff;box-shadow:0 0 20px rgba(74,111,255,0.3);}
+.drop-banner.epic{border:1px solid #fcd34d;box-shadow:0 0 30px rgba(252,211,77,0.4);}
+@keyframes dropIn{from{opacity:0;transform:translate(-50%,-50%) scale(0.7);}to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+.drop-rarity{font-size:11px;font-weight:700;margin-bottom:4px;}
+.drop-rarity.common{color:#7888bb;}
+.drop-rarity.rare{color:#4a6fff;}
+.drop-rarity.epic{color:#fcd34d;}
+.drop-name{font-size:14px;font-weight:700;color:#e8eaf6;margin-bottom:4px;}
+.drop-slot{font-size:10px;color:#7888bb;}
+.drop-svg{margin:8px auto;}
+
+/* BATTLE MSG */
+.battle-msg{margin:0 8px 6px;background:rgba(26,30,58,0.88);border-radius:8px;padding:6px 10px;font-size:11px;color:#93c5fd;min-height:30px;border-left:2px solid #4a6fff;}
+
+/* QUESTION */
+.q-area{margin:0 8px 6px;background:rgba(17,21,40,0.92);border:0.5px solid #2a3060;border-radius:12px;padding:10px;}
+.q-lbl{font-size:10px;color:#7888bb;margin-bottom:4px;letter-spacing:0.05em;}
+.q-txt{font-size:12px;color:#cdd5f5;margin-bottom:8px;line-height:1.6;}
+.svg-q-area{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+.svg-choice{cursor:pointer;border-radius:8px;border:1.5px solid #2a3060;background:#0d0f1a;padding:5px;transition:border-color 0.2s,background 0.2s;}
+.svg-choice:hover{border-color:#4a6fff;background:#1a1e3a;}
+.svg-choice.selected{border-color:#4a6fff;background:#1a2060;}
+.svg-choice.correct{border-color:#34d399;background:#052e1e;}
+.svg-choice.wrong{border-color:#f87171;background:#2a0a0a;}
+.svg-lbl{font-size:10px;text-align:center;margin-top:2px;color:#7888bb;}
+.cards-area{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+.card-btn{background:#0d0f1a;border:1.5px solid #2a3060;border-radius:10px;padding:7px 11px;font-size:14px;font-weight:700;color:#cdd5f5;cursor:pointer;min-width:48px;text-align:center;transition:all 0.15s;font-family:'Courier New',monospace;}
+.card-btn:hover{border-color:#4a6fff;background:#1a1e3a;}
+.card-btn.selected{border-color:#4a6fff;background:#1a2060;color:#93c5fd;}
+.card-btn.correct{border-color:#34d399;background:#052e1e;color:#6ee7b7;}
+.card-btn.wrong{border-color:#f87171;background:#2a0a0a;color:#fca5a5;}
+.fb{font-size:11px;padding:6px 9px;border-radius:7px;margin-top:4px;display:none;line-height:1.5;}
+.fb.show{display:block;}
+.fb.ok{background:#052e1e;color:#6ee7b7;border-left:2px solid #34d399;}
+.fb.ng{background:#2a0a0a;color:#fca5a5;border-left:2px solid #f87171;}
+
+/* BUTTONS */
+.btns-row{display:flex;gap:6px;padding:0 8px 10px;}
+.btn{flex:1;padding:8px 0;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:0.5px solid #2a3060;background:#1a1e3a;color:#93c5fd;font-family:'Courier New',monospace;transition:background 0.15s;}
+.btn:hover{background:#232760;}
+.btn.primary{background:#4a6fff;color:#fff;border-color:#4a6fff;}
+.btn.primary:hover{background:#3a5fef;}
+.btn:disabled{opacity:0.35;cursor:default;}
+
+/* UNLOCK BANNER */
+.unlock-banner{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);border-radius:12px;animation:bannerIn 0.4s ease;}
+@keyframes bannerIn{from{opacity:0;transform:scale(0.8);}to{opacity:1;transform:scale(1);}}
+
+/* STAT POPUP */
+.stat-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:150;background:#111528;border:1px solid #4a6fff;border-radius:14px;padding:18px 20px;text-align:center;min-width:220px;box-shadow:0 0 30px rgba(74,111,255,0.3);animation:dropIn 0.4s ease;}
+.stat-popup-title{font-size:14px;font-weight:700;color:#fcd34d;margin-bottom:4px;}
+.stat-popup-sub{font-size:11px;color:#7888bb;margin-bottom:12px;}
+.stat-btns{display:flex;flex-direction:column;gap:6px;}
+.stat-btn{padding:9px 14px;border-radius:8px;border:0.5px solid #2a3060;background:#1a1e3a;color:#cdd5f5;cursor:pointer;font-family:'Courier New',monospace;font-size:12px;display:flex;justify-content:space-between;align-items:center;transition:background 0.15s;}
+.stat-btn:hover{background:#232760;border-color:#4a6fff;}
+.stat-btn .stat-val{font-size:11px;color:#a29bfe;}
+.stat-btn.hp-btn:hover{border-color:#34d399;}
+.stat-btn.atk-btn:hover{border-color:#f87171;}
+.stat-btn.def-btn:hover{border-color:#60d8ff;}
+
+.unlock-inner{background:#111528;border:1px solid #4a6fff;border-radius:12px;padding:16px 20px;text-align:center;}
+.unlock-title{font-size:14px;font-weight:700;color:#fcd34d;margin-bottom:4px;}
+.unlock-sub{font-size:11px;color:#93c5fd;}
+
+/* INVENTORY MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);display:flex;align-items:flex-start;justify-content:center;padding-top:10px;}
+.modal{background:#0d0f1a;border:0.5px solid #2a3060;border-radius:14px;width:94%;max-width:460px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;}
+.modal-header{padding:10px 14px;border-bottom:0.5px solid #2a3060;display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:13px;font-weight:700;color:#93c5fd;}
+.modal-close{font-size:16px;color:#7888bb;cursor:pointer;background:none;border:none;color:#7888bb;font-family:'Courier New',monospace;}
+.comp-bar{padding:8px 14px;border-bottom:0.5px solid #2a3060;}
+.comp-label{font-size:10px;color:#7888bb;margin-bottom:4px;}
+.comp-bg{height:5px;background:#1e2240;border-radius:3px;overflow:hidden;}
+.comp-fill{height:100%;background:linear-gradient(90deg,#fcd34d,#ff6b6b);border-radius:3px;transition:width 0.5s;}
+.comp-pct{font-size:10px;color:#fcd34d;margin-top:2px;}
+
+.inv-tabs{display:flex;gap:4px;padding:8px 10px;border-bottom:0.5px solid #2a3060;overflow-x:auto;}
+.inv-tab{padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;border:0.5px solid #2a3060;background:#1a1e3a;color:#7888bb;cursor:pointer;white-space:nowrap;font-family:'Courier New',monospace;}
+.inv-tab.active{border-color:#4a6fff;background:#1a2060;color:#93c5fd;}
+
+.inv-equip{padding:8px 12px;border-bottom:0.5px solid #2a3060;display:flex;gap:8px;align-items:center;}
+.equip-slots{display:flex;gap:6px;}
+.equip-slot{text-align:center;}
+.equip-slot-label{font-size:9px;color:#7888bb;margin-bottom:2px;}
+.equip-slot-box{width:44px;height:44px;border:1px solid #2a3060;border-radius:8px;background:#111528;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.equip-slot-box.equipped{border-color:#4a6fff;}
+.equip-robot{flex:1;display:flex;justify-content:center;}
+
+.inv-list{flex:1;overflow-y:auto;padding:8px 10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.inv-item{background:#111528;border:0.5px solid #2a3060;border-radius:8px;padding:7px;cursor:pointer;transition:border-color 0.15s;}
+.inv-item:hover{border-color:#4a6fff;}
+.inv-item.equipped-item{border-color:#4a6fff;background:#1a2060;}
+.inv-item.common{border-left:2px solid #7888bb;}
+.inv-item.rare{border-left:2px solid #4a6fff;}
+.inv-item.epic{border-left:2px solid #fcd34d;}
+.inv-item.locked{opacity:0.3;cursor:default;}
+.item-name{font-size:10px;color:#cdd5f5;margin-bottom:2px;line-height:1.3;}
+.item-rarity{font-size:9px;font-weight:700;}
+.item-rarity.common{color:#7888bb;}
+.item-rarity.rare{color:#4a6fff;}
+.item-rarity.epic{color:#fcd34d;}
+.item-svg{display:flex;justify-content:center;margin:4px 0;}
+.item-equip-btn{width:100%;padding:3px 0;font-size:10px;border-radius:5px;border:0.5px solid #2a3060;background:#1a1e3a;color:#93c5fd;cursor:pointer;margin-top:4px;font-family:'Courier New',monospace;}
+.item-equip-btn.on{background:#4a6fff;color:#fff;border-color:#4a6fff;}
+.item-equip-btn:disabled{opacity:0.3;cursor:default;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="bg-layer"></div>
+  <div id="game">
+    <div class="top-bar">
+      <div class="lv-badge" id="lv-b">Lv.1</div>
+      <div class="xp-wrap">
+        <div class="xp-bar-bg"><div class="xp-bar-fill" id="xp-f" style="width:0%"></div></div>
+        <div class="xp-lbl" id="xp-l">XP 0 / 30</div>
+      </div>
+      <div class="kill-badge" id="kill-b">撃破 0/5</div>
+      <div class="streak" id="streak-b">連続 0</div>
+      <button class="inv-btn" onclick="openInv()">🎒</button>
+      <button class="bgm-btn" id="bgm-btn" onclick="toggleBGM()">♪ OFF</button>
+    </div>
+    <div class="stage-sel" id="stage-sel"></div>
+    <div class="battle-area" id="battle-area">
+      <div class="rbox">
+        <div id="p-robot-wrap"><svg id="p-svg" width="56" height="64" viewBox="0 0 64 72"></svg></div>
+        <div class="rname">ガーディアン</div>
+        <div class="hp-bg"><div class="hp-fill" id="p-hp-bar" style="width:100%;background:#4a6fff;"></div></div>
+        <div class="hp-lbl" id="p-hp-lbl">HP 10/10</div>
+      </div>
+      <div class="vs-mid">
+        <div class="vs-txt">VS</div>
+        <div class="vs-sub" id="stage-lbl">地上都市 — 辺の長さ</div>
+      </div>
+      <div class="rbox">
+        <div id="e-robot-wrap"><svg width="56" height="64" viewBox="0 0 64 72" id="e-svg-main">
+          <rect x="20" y="8" width="24" height="20" rx="3" fill="#c0392b"/>
+          <circle cx="27" cy="18" r="4" fill="#ff6b6b"/>
+          <circle cx="37" cy="18" r="4" fill="#ff6b6b"/>
+          <rect x="14" y="30" width="36" height="22" rx="3" fill="#c0392b"/>
+          <rect x="22" y="36" width="20" height="6" rx="1" fill="#7b1a1a"/>
+          <rect x="6" y="30" width="8" height="18" rx="3" fill="#a93226"/>
+          <rect x="50" y="30" width="8" height="18" rx="3" fill="#a93226"/>
+          <rect x="20" y="54" width="10" height="14" rx="3" fill="#a93226"/>
+          <rect x="34" y="54" width="10" height="14" rx="3" fill="#a93226"/>
+          <polygon points="16,8 20,0 24,8" fill="#c0392b"/>
+          <polygon points="40,8 44,0 48,8" fill="#c0392b"/>
+        </svg></div>
+        <div class="rname" id="e-name">スコーピオン</div>
+        <div class="hp-bg"><div class="hp-fill" id="e-hp-bar" style="width:100%;background:#c0392b;"></div></div>
+        <div class="hp-lbl" id="e-hp-lbl">HP 8/8</div>
+        <div class="kill-count" id="kill-count">撃破 0 / 5</div>
+      </div>
+    </div>
+    <div class="battle-msg" id="battle-msg">「スコーピオンが現れた！問題を解いて攻撃せよ！」</div>
+    <div class="q-area">
+      <div class="q-lbl" id="q-lbl">ミッション</div>
+      <div class="q-txt" id="q-txt">読み込み中…</div>
+      <div id="q-vis"></div>
+      <div class="cards-area" id="cards"></div>
+      <div class="fb" id="fb"></div>
+    </div>
+    <div class="btns-row">
+      <button class="btn" onclick="useHint()">ヒント</button>
+      <button class="btn" onclick="resetQ()">リセット</button>
+      <button class="btn primary" id="next-btn" onclick="nextQ()" disabled>つぎへ →</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVENTORY MODAL -->
+<div class="modal-overlay" id="inv-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🎒 アイテムボックス</div>
+      <button class="modal-close" onclick="closeInv()">✕</button>
+    </div>
+    <div class="comp-bar">
+      <div class="comp-label">コンプリート率</div>
+      <div class="comp-bg"><div class="comp-fill" id="comp-fill" style="width:0%"></div></div>
+      <div class="comp-pct" id="comp-pct">0 / 150 (0%)</div>
+    </div>
+    <div class="inv-equip">
+      <div class="equip-slots" id="equip-slots"></div>
+      <div class="equip-robot"><svg id="inv-robot-svg" width="64" height="72" viewBox="0 0 64 72"></svg></div>
+    </div>
+    <div class="inv-tabs" id="inv-tabs"></div>
+    <div class="inv-list" id="inv-list"></div>
+  </div>
+</div>
+
+<script>
+const BGM_URL={
+  cs:'https://YAMO10-16.github.io/robot_math/Control_Station.mp3',
+  rf:'https://YAMO10-16.github.io/robot_math/Reflect.mp3',
+  cj:'https://YAMO10-16.github.io/robot_math/Clock_Jitter.mp3',
+};
+const AC=new (window.AudioContext||window.webkitAudioContext)();
+let bgmSource=null,bgmGain=null,bgmOn=false,bgmCurrent=null,bgmBuffers={};
+
+async function loadBGM(){
+  for(const[k,v] of Object.entries(BGM_URL)){
+    try{const res=await fetch(v);const arr=await res.arrayBuffer();bgmBuffers[k]=await AC.decodeAudioData(arr);}catch(e){}
+  }
+}
+function playBGM(key){
+  if(!bgmOn||bgmCurrent===key) return;
+  stopBGM();
+  if(!bgmBuffers[key]) return;
+  bgmGain=AC.createGain();bgmGain.gain.setValueAtTime(0.35,AC.currentTime);bgmGain.connect(AC.destination);
+  bgmSource=AC.createBufferSource();bgmSource.buffer=bgmBuffers[key];bgmSource.loop=true;bgmSource.connect(bgmGain);bgmSource.start(0);bgmCurrent=key;
+}
+function stopBGM(){if(bgmSource){try{bgmSource.stop();}catch(e){}bgmSource=null;}bgmCurrent=null;}
+function duckBGM(duck){if(!bgmGain)return;bgmGain.gain.cancelScheduledValues(AC.currentTime);bgmGain.gain.linearRampToValueAtTime(duck?0.235:0.35,AC.currentTime+0.3);}
+function toggleBGM(){
+  if(!bgmOn){AC.resume();bgmOn=true;document.getElementById('bgm-btn').textContent='♪ ON';document.getElementById('bgm-btn').classList.add('on');playBGM(curS().boss?'cj':'rf');}
+  else{bgmOn=false;stopBGM();document.getElementById('bgm-btn').textContent='♪ OFF';document.getElementById('bgm-btn').classList.remove('on');}
+}
+
+function tone(freq,type,dur,vol,t0,freqEnd){
+  const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
+  o.type=type||'sine';o.frequency.setValueAtTime(freq,AC.currentTime+(t0||0));
+  if(freqEnd)o.frequency.exponentialRampToValueAtTime(freqEnd,AC.currentTime+(t0||0)+dur);
+  g.gain.setValueAtTime(vol||0.3,AC.currentTime+(t0||0));g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+(t0||0)+dur);
+  o.start(AC.currentTime+(t0||0));o.stop(AC.currentTime+(t0||0)+dur+0.01);
+}
+function noise(dur,vol,t0){
+  const buf=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
+  const src=AC.createBufferSource(),g=AC.createGain();src.buffer=buf;src.connect(g);g.connect(AC.destination);
+  g.gain.setValueAtTime(vol||0.2,AC.currentTime+(t0||0));g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+(t0||0)+dur);src.start(AC.currentTime+(t0||0));
+}
+const SE={
+  correct(){tone(330,'sine',0.08,0.4,0);tone(440,'sine',0.08,0.4,0.06);tone(550,'sine',0.08,0.4,0.12);tone(660,'sine',0.15,0.45,0.18);tone(880,'sine',0.2,0.35,0.26);},
+  wrong(){tone(200,'sawtooth',0.08,0.4,0,100);tone(160,'sawtooth',0.12,0.35,0.08,80);tone(120,'sawtooth',0.15,0.3,0.18,60);noise(0.25,0.15,0);},
+  attack(effect){
+    const isBig=['meteor','blackhole','plasma','supernova'].includes(effect);
+    if(isBig){tone(1400,'square',0.03,0.6,0,700);tone(1000,'square',0.05,0.55,0.02,500);noise(0.2,0.5,0);noise(0.15,0.35,0.08);}
+    else if(['freeze','laser'].includes(effect)){tone(800,'sine',0.1,0.4,0,1200);tone(600,'sine',0.15,0.35,0.05,900);noise(0.1,0.2,0);}
+    else if(['explosion','explosion2','explosion3','explosion4','explosion5'].includes(effect)){tone(600,'square',0.05,0.5,0,200);noise(0.2,0.4,0);noise(0.1,0.3,0.08);}
+    else if(effect&&effect.startsWith('lightning')){tone(1200,'square',0.04,0.5,0,300);tone(800,'sawtooth',0.06,0.4,0.03,200);noise(0.12,0.35,0);}
+    else{tone(1200,'square',0.04,0.5,0,600);tone(800,'square',0.06,0.45,0.03,400);tone(400,'sawtooth',0.1,0.4,0.07,150);noise(0.15,0.3,0);}
+  },
+  damaged(){tone(180,'sawtooth',0.06,0.5,0,80);tone(120,'sawtooth',0.1,0.45,0.06,60);noise(0.2,0.25,0);},
+  levelup(){[261,329,392,523,659,784].forEach((f,i)=>tone(f,'sine',0.18,0.35,i*0.09));},
+  unlock(){tone(440,'sine',0.12,0.4,0);tone(550,'sine',0.12,0.4,0.1);tone(660,'sine',0.12,0.4,0.2);tone(880,'sine',0.25,0.5,0.3);tone(1100,'sine',0.3,0.4,0.42);},
+  defeat(){tone(600,'square',0.05,0.5,0,800);tone(400,'sawtooth',0.08,0.45,0.04,200);noise(0.3,0.4,0);},
+  drop(rarity){
+    if(rarity==='epic'){[440,550,660,880,1100].forEach((f,i)=>tone(f,'sine',0.2,0.4,i*0.08));noise(0.1,0.2,0.3);}
+    else if(rarity==='rare'){[330,440,550,660].forEach((f,i)=>tone(f,'sine',0.15,0.35,i*0.07));}
+    else{tone(330,'sine',0.1,0.3,0);tone(440,'sine',0.1,0.25,0.08);}
+  }
+};
+
+// ===== ITEM SYSTEM =====
+const SLOTS=['head','body','arm','leg','weapon'];
+const SLOT_JP={head:'頭',body:'胴体',arm:'腕',leg:'脚',weapon:'武器'};
+const RARITIES=['common','rare','epic'];
+const RARITY_JP={common:'コモン',rare:'レア',epic:'エピック'};
+const RARITY_COLOR={common:'#7888bb',rare:'#4a6fff',epic:'#fcd34d'};
+const DROP_RATE={common:0.70,rare:0.25,epic:0.05};
+
+const WEAPON_EFFECTS={
+  common:['slash','slash2','slash3','slash4','slash5','slash6','slash7','slash8','slash9','slash10','slash11','slash12','slash13','slash14'],
+  rare:['explosion','explosion2','explosion3','explosion4','explosion5','lightning','lightning2','lightning3','lightning4','lightning5'],
+  epic:['freeze','laser','meteor','blackhole','plasma','supernova']
+};
+const EFFECT_JP={
+  slash:'斬撃',slash2:'二連斬',slash3:'三連斬',slash4:'回転斬',slash5:'衝撃波',
+  slash6:'真空斬',slash7:'光速斬',slash8:'龍斬',slash9:'破砕斬',slash10:'爆砕斬',
+  slash11:'裂空斬',slash12:'断絶斬',slash13:'無双斬',slash14:'覇王斬',
+  explosion:'爆発',explosion2:'二重爆発',explosion3:'連続爆発',explosion4:'核爆発',explosion5:'超新星爆発',
+  lightning:'電撃',lightning2:'雷神',lightning3:'天雷',lightning4:'帯電',lightning5:'超電磁',
+  freeze:'冷凍',laser:'レーザー',meteor:'隕石落下',blackhole:'ブラックホール',plasma:'プラズマ',supernova:'超新星'
+};
+
+// Color palettes per rarity
+const HEAD_COLORS={
+  common:['#4a6fff','#3a5fef','#2a4fdf','#5570ff','#3060e0','#4050d0','#6080ff','#2840c0','#5060e8','#3850d8','#4870f0','#2050b0','#6070f8','#3060c8'],
+  rare:['#4a6fff','#2a3fdf','#5570ff','#3050ef','#4060df','#2840cf','#6080ff','#3858ef','#4870ff','#2050bf'],
+  epic:['#a29bfe','#c4b5fd','#8b80fe','#d4c5fd','#b4aaff','#e4d5ff']
+};
+const BODY_COLORS={
+  common:['#4a6fff','#3a5fef','#2a4fdf','#5570ff','#3060e0','#4050d0','#6080ff','#2840c0','#5060e8','#3850d8','#4870f0','#2050b0','#6070f8','#3060c8'],
+  rare:['#4a6fff','#2a3fdf','#5570ff','#3050ef','#4060df','#2840cf','#6080ff','#3858ef','#4870ff','#2050bf'],
+  epic:['#a29bfe','#c4b5fd','#8b80fe','#d4c5fd','#b4aaff','#e4d5ff']
+};
+const ARM_COLORS={
+  common:['#3a5fef','#4a6fff','#2a4fdf','#5570ff','#3060e0','#4050d0','#6080ff','#2840c0','#5060e8','#3850d8','#4870f0','#2050b0','#6070f8','#3060c8'],
+  rare:['#2a3fdf','#4a6fff','#5570ff','#3050ef','#4060df','#2840cf','#6080ff','#3858ef','#4870ff','#2050bf'],
+  epic:['#c4b5fd','#a29bfe','#d4c5fd','#8b80fe','#b4aaff','#e4d5ff']
+};
+const LEG_COLORS={
+  common:['#3a5fef','#4a6fff','#2a4fdf','#5570ff','#3060e0','#4050d0','#6080ff','#2840c0','#5060e8','#3850d8','#4870f0','#2050b0','#6070f8','#3060c8'],
+  rare:['#2a3fdf','#4a6fff','#5570ff','#3050ef','#4060df','#2840cf','#6080ff','#3858ef','#4870ff','#2050bf'],
+  epic:['#c4b5fd','#a29bfe','#d4c5fd','#8b80fe','#b4aaff','#e4d5ff']
+};
+const WEAPON_COLORS={
+  common:['#7888bb','#6878ab','#889898','#9898a8','#7898b8','#6888a8','#8898c8','#9898b8','#78a8c8','#68a898','#88b8c8','#68b8a8','#98c8d8','#88c8c8'],
+  rare:['#4a6fff','#fcd34d','#34d399','#f87171','#a29bfe','#60d8ff','#ffb347','#ff6b9d','#47d8b0','#d4a5ff'],
+  epic:['#fcd34d','#ff6b6b','#6ee7b7','#a29bfe','#60d8ff','#ff9f43']
+};
+
+function generateAllItems(){
+  const items=[];
+  SLOTS.forEach(slot=>{
+    const colors={head:HEAD_COLORS,body:BODY_COLORS,arm:ARM_COLORS,leg:LEG_COLORS,weapon:WEAPON_COLORS}[slot];
+    RARITIES.forEach(rarity=>{
+      const count={common:14,rare:10,epic:6}[rarity];
+      for(let i=0;i<count;i++){
+        const id=`${slot}_${rarity}_${i}`;
+        let name='',effect=null;
+        if(slot==='weapon'){
+          effect=WEAPON_EFFECTS[rarity][i];
+          const suffix={common:['Mk1','Mk2','Mk3','Mk4','Mk5','Mk6','Mk7','Mk8','Mk9','Mk10','Mk11','Mk12','Mk13','Mk14'],rare:['α','β','γ','δ','ε','ζ','η','θ','ι','κ'],epic:['']}[rarity];
+          name=EFFECT_JP[effect]+(suffix[i]?`・${suffix[i]}`:'');
+        } else {
+          const bases={
+            head:{common:'ヘルメット',rare:'クラウン',epic:'ゴッドヘルム'},
+            body:{common:'チェスト',rare:'アーマー',epic:'レジェンドコア'},
+            arm:{common:'アーム',rare:'ブレードアーム',epic:'ゴッドアーム'},
+            leg:{common:'レッグ',rare:'ブースターレッグ',epic:'レビテーター'},
+          }[slot];
+          const suffix={common:['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ'],rare:['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ','Ⅹ'],epic:['星','月','太陽','銀河','宇宙','神']}[rarity];
+          name=`${bases[rarity]}・${suffix[i]}`;
+        }
+        items.push({id,slot,rarity,name,effect,color:colors[rarity][i]});
+      }
+    });
+  });
+  return items;
+}
+
+const ALL_ITEMS=generateAllItems();
+
+// SVG generators for items (small, for inventory)
+function itemSVG(item,size=36){
+  const c=item.color,s=size;
+  if(item.slot==='head'){
+    if(item.rarity==='epic') return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><ellipse cx="18" cy="16" rx="12" ry="10" fill="${c}"/><rect x="10" y="20" width="16" height="8" rx="2" fill="${c}"/><circle cx="14" cy="14" r="3" fill="#fff" opacity="0.8"/><circle cx="22" cy="14" r="3" fill="#fff" opacity="0.8"/><polygon points="18,2 20,8 16,8" fill="#fcd34d"/><circle cx="18" cy="1" r="2" fill="#fcd34d"/></svg>`;
+    if(item.rarity==='rare') return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="8" y="10" width="20" height="18" rx="4" fill="${c}"/><rect x="12" y="14" width="5" height="5" rx="1" fill="#fff" opacity="0.7"/><rect x="19" y="14" width="5" height="5" rx="1" fill="#fff" opacity="0.7"/><polygon points="11,10 14,4 17,10" fill="${c}"/><polygon points="19,10 22,4 25,10" fill="${c}"/></svg>`;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="10" y="12" width="16" height="16" rx="4" fill="${c}"/><rect x="13" y="15" width="4" height="4" rx="1" fill="#fff" opacity="0.6"/><rect x="19" y="15" width="4" height="4" rx="1" fill="#fff" opacity="0.6"/><rect x="16" y="8" width="4" height="6" rx="1" fill="${c}"/></svg>`;
+  }
+  if(item.slot==='body'){
+    if(item.rarity==='epic') return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="6" y="8" width="24" height="20" rx="4" fill="${c}"/><circle cx="18" cy="16" r="5" fill="#fcd34d" opacity="0.8"/><circle cx="18" cy="16" r="2" fill="#fff"/><rect x="2" y="10" width="5" height="12" rx="2" fill="${c}"/><rect x="29" y="10" width="5" height="12" rx="2" fill="${c}"/></svg>`;
+    if(item.rarity==='rare') return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="7" y="10" width="22" height="18" rx="3" fill="${c}"/><rect x="12" y="14" width="12" height="6" rx="1" fill="#1a2060"/><rect x="3" y="11" width="5" height="10" rx="2" fill="${c}"/><rect x="28" y="11" width="5" height="10" rx="2" fill="${c}"/></svg>`;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="9" y="12" width="18" height="16" rx="3" fill="${c}"/><rect x="12" y="16" width="5" height="4" rx="1" fill="#1a2060"/><rect x="19" y="16" width="5" height="4" rx="1" fill="#1a2060"/><rect x="5" y="13" width="5" height="8" rx="2" fill="${c}"/><rect x="26" y="13" width="5" height="8" rx="2" fill="${c}"/></svg>`;
+  }
+  if(item.slot==='arm'){
+    if(item.rarity==='epic') return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="10" y="6" width="8" height="24" rx="3" fill="${c}"/><rect x="18" y="12" width="10" height="6" rx="2" fill="#fcd34d" opacity="0.8"/><circle cx="14" cy="32" r="3" fill="${c}"/></svg>`;
+    if(item.rarity==='rare') return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="11" y="8" width="8" height="20" rx="3" fill="${c}"/><rect x="19" y="14" width="8" height="4" rx="2" fill="${c}"/><rect x="9" y="26" width="12" height="5" rx="2" fill="${c}"/></svg>`;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="13" y="10" width="8" height="18" rx="3" fill="${c}"/><rect x="11" y="26" width="12" height="4" rx="2" fill="${c}"/></svg>`;
+  }
+  if(item.slot==='leg'){
+    if(item.rarity==='epic') return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="8" y="6" width="8" height="16" rx="3" fill="${c}"/><rect x="20" y="6" width="8" height="16" rx="3" fill="${c}"/><rect x="6" y="20" width="10" height="10" rx="2" fill="${c}"/><rect x="20" y="20" width="10" height="10" rx="2" fill="${c}"/><circle cx="11" cy="30" r="3" fill="#fcd34d"/><circle cx="25" cy="30" r="3" fill="#fcd34d"/></svg>`;
+    if(item.rarity==='rare') return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="9" y="8" width="8" height="14" rx="3" fill="${c}"/><rect x="19" y="8" width="8" height="14" rx="3" fill="${c}"/><rect x="7" y="20" width="10" height="10" rx="2" fill="${c}"/><rect x="19" y="20" width="10" height="10" rx="2" fill="${c}"/></svg>`;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="10" y="10" width="7" height="14" rx="2" fill="${c}"/><rect x="19" y="10" width="7" height="14" rx="2" fill="${c}"/><rect x="9" y="22" width="9" height="8" rx="2" fill="${c}"/><rect x="18" y="22" width="9" height="8" rx="2" fill="${c}"/></svg>`;
+  }
+  if(item.slot==='weapon'){
+    if(item.rarity==='epic') return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="16" y="4" width="4" height="28" rx="2" fill="${c}"/><polygon points="18,2 24,12 12,12" fill="${c}"/><rect x="8" y="18" width="20" height="3" rx="1" fill="${c}"/><circle cx="18" cy="32" r="3" fill="#fcd34d"/></svg>`;
+    if(item.rarity==='rare') return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="16" y="6" width="4" height="22" rx="2" fill="${c}"/><polygon points="18,4 23,12 13,12" fill="${c}"/><rect x="10" y="19" width="16" height="3" rx="1" fill="${c}"/></svg>`;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="17" y="8" width="3" height="20" rx="1" fill="${c}"/><polygon points="18,6 22,14 14,14" fill="${c}"/><rect x="12" y="20" width="12" height="2" rx="1" fill="${c}"/></svg>`;
+  }
+  return `<svg width="${s}" height="${s}" viewBox="0 0 36 36"><rect x="8" y="8" width="20" height="20" rx="4" fill="${c}"/></svg>`;
+}
+
+// Player robot SVG with equipment
+function buildPlayerSVG(equipped,size=64){
+  const eqs={};
+  SLOTS.forEach(slot=>{if(equipped[slot]){const item=ALL_ITEMS.find(i=>i.id===equipped[slot]);if(item)eqs[slot]=item;}});
+  const hc=eqs.head?eqs.head.color:'#4a6fff';
+  const bc=eqs.body?eqs.body.color:'#4a6fff';
+  const ac=eqs.arm?eqs.arm.color:'#3a5fef';
+  const lc=eqs.leg?eqs.leg.color:'#3a5fef';
+  const wc=eqs.weapon?eqs.weapon.color:'none';
+  const scale=size/64;
+  let svg=`<svg width="${size}" height="${Math.round(72*scale)}" viewBox="0 0 64 72">`;
+  // Head
+  if(eqs.head&&eqs.head.rarity==='epic'){
+    svg+=`<rect x="20" y="8" width="24" height="20" rx="4" fill="${hc}"/>`;
+    svg+=`<circle cx="27" cy="16" r="4" fill="#fcd34d" opacity="0.9"/><circle cx="37" cy="16" r="4" fill="#fcd34d" opacity="0.9"/>`;
+    svg+=`<polygon points="28,8 32,2 36,8" fill="#fcd34d"/>`;
+  } else if(eqs.head&&eqs.head.rarity==='rare'){
+    svg+=`<rect x="20" y="8" width="24" height="20" rx="4" fill="${hc}"/>`;
+    svg+=`<rect x="24" y="13" width="6" height="5" rx="1" fill="#fcd34d" opacity="0.8"/><rect x="34" y="13" width="6" height="5" rx="1" fill="#fcd34d" opacity="0.8"/>`;
+    svg+=`<polygon points="22,8 26,2 30,8" fill="${hc}"/><polygon points="34,8 38,2 42,8" fill="${hc}"/>`;
+  } else {
+    svg+=`<rect x="20" y="8" width="24" height="20" rx="4" fill="${hc}"/>`;
+    svg+=`<rect x="24" y="13" width="6" height="5" rx="1" fill="#93c5fd"/><rect x="34" y="13" width="6" height="5" rx="1" fill="#93c5fd"/>`;
+  }
+  // Body
+  if(eqs.body&&eqs.body.rarity==='epic'){
+    svg+=`<rect x="12" y="30" width="40" height="22" rx="4" fill="${bc}"/>`;
+    svg+=`<circle cx="32" cy="41" r="6" fill="#fcd34d" opacity="0.7"/><circle cx="32" cy="41" r="3" fill="#fff" opacity="0.8"/>`;
+  } else if(eqs.body&&eqs.body.rarity==='rare'){
+    svg+=`<rect x="13" y="30" width="38" height="22" rx="4" fill="${bc}"/>`;
+    svg+=`<rect x="19" y="36" width="11" height="8" rx="2" fill="#1a2060"/><rect x="34" y="36" width="11" height="8" rx="2" fill="#1a2060"/>`;
+  } else {
+    svg+=`<rect x="14" y="30" width="36" height="22" rx="4" fill="${bc}"/>`;
+    svg+=`<rect x="20" y="36" width="10" height="8" rx="2" fill="#1a2060"/><rect x="34" y="36" width="10" height="8" rx="2" fill="#1a2060"/>`;
+  }
+  // Arms
+  if(eqs.arm&&eqs.arm.rarity==='epic'){
+    svg+=`<rect x="4" y="28" width="9" height="18" rx="3" fill="${ac}"/><rect x="51" y="28" width="9" height="18" rx="3" fill="${ac}"/>`;
+    svg+=`<rect x="2" y="42" width="9" height="4" rx="2" fill="#fcd34d"/>`;
+  } else if(eqs.arm&&eqs.arm.rarity==='rare'){
+    svg+=`<rect x="5" y="29" width="8" height="17" rx="3" fill="${ac}"/><rect x="51" y="29" width="8" height="17" rx="3" fill="${ac}"/>`;
+    svg+=`<rect x="3" y="40" width="8" height="4" rx="1" fill="${ac}"/>`;
+  } else {
+    svg+=`<rect x="6" y="30" width="8" height="16" rx="3" fill="${ac}"/><rect x="50" y="30" width="8" height="16" rx="3" fill="${ac}"/>`;
+  }
+  // Legs
+  if(eqs.leg&&eqs.leg.rarity==='epic'){
+    svg+=`<rect x="19" y="54" width="11" height="14" rx="3" fill="${lc}"/><rect x="34" y="54" width="11" height="14" rx="3" fill="${lc}"/>`;
+    svg+=`<circle cx="24" cy="68" r="3" fill="#fcd34d"/><circle cx="39" cy="68" r="3" fill="#fcd34d"/>`;
+  } else {
+    svg+=`<rect x="20" y="54" width="10" height="14" rx="3" fill="${lc}"/><rect x="34" y="54" width="10" height="14" rx="3" fill="${lc}"/>`;
+  }
+  // Weapon (right side extra)
+  if(eqs.weapon){
+    svg+=`<rect x="51" y="34" width="4" height="12" rx="2" fill="${wc}"/>`;
+    if(eqs.weapon.rarity==='epic') svg+=`<polygon points="53,30 57,36 49,36" fill="${wc}"/>`;
+  }
+  svg+='</svg>';
+  return svg;
+}
+
+// Attack effect SVG based on weapon effect
+function attackEffectSVG(effect){
+  if(!effect||effect.startsWith('slash')){
+    return `<svg width="52" height="52" viewBox="0 0 52 52"><line x1="4" y1="48" x2="48" y2="4" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/><line x1="12" y1="48" x2="48" y2="12" stroke="#fcd34d" stroke-width="2" stroke-linecap="round" opacity="0.5"/></svg>`;
+  }
+  if(effect.startsWith('explosion')){
+    return `<svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="20" fill="#ff6b6b" opacity="0.3"/><circle cx="30" cy="30" r="12" fill="#ff8c00" opacity="0.6"/><circle cx="30" cy="30" r="5" fill="#fcd34d"/><line x1="30" y1="4" x2="30" y2="14" stroke="#ff6b6b" stroke-width="3"/><line x1="30" y1="46" x2="30" y2="56" stroke="#ff6b6b" stroke-width="3"/><line x1="4" y1="30" x2="14" y2="30" stroke="#ff6b6b" stroke-width="3"/><line x1="46" y1="30" x2="56" y2="30" stroke="#ff6b6b" stroke-width="3"/></svg>`;
+  }
+  if(effect.startsWith('lightning')){
+    return `<svg width="52" height="60" viewBox="0 0 52 60"><polyline points="30,2 18,28 28,28 16,58" stroke="#fcd34d" stroke-width="4" fill="none" stroke-linecap="round"/><polyline points="30,2 18,28 28,28 16,58" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.6"/></svg>`;
+  }
+  if(effect==='freeze'){
+    return `<svg width="56" height="56" viewBox="0 0 56 56"><line x1="28" y1="4" x2="28" y2="52" stroke="#60d8ff" stroke-width="3"/><line x1="4" y1="28" x2="52" y2="28" stroke="#60d8ff" stroke-width="3"/><line x1="10" y1="10" x2="46" y2="46" stroke="#60d8ff" stroke-width="2"/><line x1="46" y1="10" x2="10" y2="46" stroke="#60d8ff" stroke-width="2"/><circle cx="28" cy="28" r="6" fill="#60d8ff" opacity="0.6"/></svg>`;
+  }
+  if(effect==='laser'){
+    return `<svg width="70" height="20" viewBox="0 0 70 20"><rect x="0" y="8" width="70" height="4" rx="2" fill="#ff4444"/><rect x="0" y="7" width="70" height="6" rx="3" fill="#ff4444" opacity="0.3"/><circle cx="68" cy="10" r="6" fill="#fcd34d" opacity="0.8"/></svg>`;
+  }
+  if(effect==='meteor'){
+    return `<svg width="60" height="60" viewBox="0 0 60 60"><circle cx="40" cy="20" r="14" fill="#ff6b6b"/><circle cx="40" cy="20" r="8" fill="#fcd34d"/><line x1="30" y1="30" x2="5" y2="55" stroke="#ff8c00" stroke-width="6" stroke-linecap="round" opacity="0.7"/><line x1="28" y1="32" x2="3" y2="57" stroke="#fcd34d" stroke-width="3" stroke-linecap="round" opacity="0.5"/></svg>`;
+  }
+  if(effect==='blackhole'){
+    return `<svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="none" stroke="#a29bfe" stroke-width="2" opacity="0.5"/><circle cx="30" cy="30" r="16" fill="none" stroke="#c4b5fd" stroke-width="2" opacity="0.6"/><circle cx="30" cy="30" r="8" fill="#1a0a2a"/><circle cx="30" cy="30" r="4" fill="#000"/></svg>`;
+  }
+  if(effect==='plasma'){
+    return `<svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="22" fill="#6ee7b7" opacity="0.2"/><circle cx="28" cy="28" r="14" fill="#34d399" opacity="0.4"/><circle cx="28" cy="28" r="7" fill="#6ee7b7" opacity="0.8"/><circle cx="28" cy="28" r="3" fill="#fff"/></svg>`;
+  }
+  if(effect==='supernova'){
+    return `<svg width="70" height="70" viewBox="0 0 70 70"><circle cx="35" cy="35" r="30" fill="#fcd34d" opacity="0.15"/><circle cx="35" cy="35" r="20" fill="#ff6b6b" opacity="0.3"/><circle cx="35" cy="35" r="10" fill="#fcd34d" opacity="0.7"/><circle cx="35" cy="35" r="4" fill="#fff"/>${[0,45,90,135,180,225,270,315].map(a=>`<line x1="35" y1="35" x2="${35+Math.cos(a*Math.PI/180)*34}" y2="${35+Math.sin(a*Math.PI/180)*34}" stroke="#fcd34d" stroke-width="2" opacity="0.6"/>`).join('')}</svg>`;
+  }
+  return `<svg width="52" height="52" viewBox="0 0 52 52"><line x1="4" y1="48" x2="48" y2="4" stroke="#fcd34d" stroke-width="4" stroke-linecap="round"/></svg>`;
+}
+
+// ===== SAVE/LOAD =====
+function saveData(){
+  try{localStorage.setItem('robot_rpg_save',JSON.stringify({gs:{lv:gs.lv,xp:gs.xp,xpMax:gs.xpMax,streak:gs.streak,pHp:gs.pHp,pHpMax:gs.pHpMax,unlocked:[...gs.unlocked],totalKills:[...gs.totalKills],statAtk:gs.statAtk,statDef:gs.statDef,statHpBonus:gs.statHpBonus,pendingPoints:gs.pendingPoints,ng:gs.ng,world:gs.world},inv:{owned:inv.owned,equipped:inv.equipped}}));}catch(e){}
+}
+function loadData(){
+  try{
+    const d=JSON.parse(localStorage.getItem('robot_rpg_save'));
+    if(!d)return;
+    if(d.gs){Object.assign(gs,d.gs);}
+    if(d.inv){inv.owned=d.inv.owned||[];inv.equipped=d.inv.equipped||{};}
+  }catch(e){}
+}
+
+// ===== GAME STATE =====
+const gs={
+  lv:1,xp:0,xpMax:30,streak:0,
+  pHp:10,pHpMax:10,
+  eHp:8,eHpMax:8,
+  stageIdx:0,qIdx:0,answered:false,hintUsed:false,
+  kills:0,totalKills:[0,0,0,0,0,0,0,0,0,0],
+  unlocked:[true,false,false,false,false,false,false,false,false,false],
+  // Stats
+  statAtk:1,statDef:0,statHpBonus:0,
+  pendingPoints:0,
+  ng:1,  // playthrough number
+  world:1, // 1=W1(S1-5), 2=W2(S6-10)
+};
+const inv={owned:[],equipped:{}};
+const KILLS=5;
+
+function curS(){return STAGES[gs.stageIdx];}
+function curQ(){return curS().questions[gs.qIdx%curS().questions.length];}
+function equippedWeaponEffect(){const id=inv.equipped.weapon;if(!id)return null;const item=ALL_ITEMS.find(i=>i.id===id);return item?item.effect:null;}
+
+// ===== DROP SYSTEM =====
+function rollDrop(){
+  const r=Math.random();
+  let rarity=r<DROP_RATE.epic?'epic':r<DROP_RATE.epic+DROP_RATE.rare?'rare':'common';
+  const slot=SLOTS[Math.floor(Math.random()*SLOTS.length)];
+  const pool=ALL_ITEMS.filter(i=>i.slot===slot&&i.rarity===rarity&&!inv.owned.includes(i.id));
+  if(pool.length===0){
+    const any=ALL_ITEMS.filter(i=>!inv.owned.includes(i.id));
+    if(any.length===0)return null;
+    return any[Math.floor(Math.random()*any.length)];
+  }
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function bossDrop(){
+  const pool=ALL_ITEMS.filter(i=>['rare','epic'].includes(i.rarity)&&!inv.owned.includes(i.id));
+  if(pool.length===0)return rollDrop();
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function showDropBanner(item,cb){
+  SE.drop(item.rarity);
+  const ban=document.createElement('div');
+  ban.className=`drop-banner ${item.rarity}`;
+  ban.innerHTML=`<div class="drop-rarity ${item.rarity}">${RARITY_JP[item.rarity]} アイテム獲得！</div><div class="drop-svg">${itemSVG(item,48)}</div><div class="drop-name">${item.name}</div><div class="drop-slot">${SLOT_JP[item.slot]}</div>`;
+  document.body.appendChild(ban);
+  setTimeout(()=>{ban.remove();if(cb)cb();},2000);
+}
+function giveItem(item){
+  if(!item)return;
+  if(!inv.owned.includes(item.id)) inv.owned.push(item.id);
+  saveData();
+  showDropBanner(item,null);
+  refreshPlayerRobot();
+}
+
+// ===== INVENTORY UI =====
+let invTab='head';
+function openInv(){
+  document.getElementById('inv-modal').style.display='flex';
+  renderInvTabs();renderInvEquipSlots();renderInvList();updateCompBar();
+}
+function closeInv(){document.getElementById('inv-modal').style.display='none';}
+function updateCompBar(){
+  const pct=Math.round(inv.owned.length/150*100);
+  document.getElementById('comp-fill').style.width=pct+'%';
+  document.getElementById('comp-pct').textContent=`${inv.owned.length} / 150 (${pct}%)`;
+}
+function renderInvTabs(){
+  const el=document.getElementById('inv-tabs');el.innerHTML='';
+  SLOTS.forEach(slot=>{
+    const b=document.createElement('button');b.className='inv-tab'+(slot===invTab?' active':'');
+    b.textContent=SLOT_JP[slot];b.onclick=()=>{invTab=slot;renderInvTabs();renderInvList();renderInvEquipSlots();};
+    el.appendChild(b);
+  });
+}
+function renderInvEquipSlots(){
+  const el=document.getElementById('equip-slots');el.innerHTML='';
+  SLOTS.forEach(slot=>{
+    const div=document.createElement('div');div.className='equip-slot';
+    const lbl=document.createElement('div');lbl.className='equip-slot-label';lbl.textContent=SLOT_JP[slot];
+    const box=document.createElement('div');box.className='equip-slot-box'+(inv.equipped[slot]?' equipped':'');
+    if(inv.equipped[slot]){
+      const item=ALL_ITEMS.find(i=>i.id===inv.equipped[slot]);
+      if(item)box.innerHTML=itemSVG(item,36);
+    } else {
+      box.innerHTML=`<span style="font-size:18px;opacity:0.3">—</span>`;
+    }
+    box.onclick=()=>{invTab=slot;renderInvTabs();renderInvList();renderInvEquipSlots();};
+    div.appendChild(lbl);div.appendChild(box);el.appendChild(div);
+  });
+  const invRobot=document.querySelector('.equip-robot');
+  if(invRobot) invRobot.innerHTML=buildPlayerSVG(inv.equipped,64);
+}
+function renderInvList(){
+  const el=document.getElementById('inv-list');el.innerHTML='';
+  const slotItems=ALL_ITEMS.filter(i=>i.slot===invTab);
+  slotItems.forEach(item=>{
+    const owned=inv.owned.includes(item.id);
+    const equipped=inv.equipped[invTab]===item.id;
+    const div=document.createElement('div');
+    div.className=`inv-item ${item.rarity}`+(equipped?' equipped-item':'')+(owned?'':' locked');
+    div.innerHTML=`<div class="item-svg">${itemSVG(item,36)}</div><div class="item-name">${owned?item.name:'???'}</div><div class="item-rarity ${item.rarity}">${RARITY_JP[item.rarity]}</div>`;
+    if(owned){
+      const btn=document.createElement('button');
+      btn.className='item-equip-btn'+(equipped?' on':'');
+      btn.textContent=equipped?'装備中':'装備する';
+      btn.onclick=()=>{
+        if(equipped){delete inv.equipped[invTab];}
+        else{inv.equipped[invTab]=item.id;}
+        saveData();
+        refreshPlayerRobot();
+        renderInvList();
+        renderInvEquipSlots();
+      };
+      div.appendChild(btn);
+    }
+    el.appendChild(div);
+  });
+}
+function refreshPlayerRobot(){
+  const newSvg=buildPlayerSVG(inv.equipped,56);
+  const wrap=document.getElementById('p-robot-wrap');
+  if(wrap){
+    const existing=wrap.querySelector('svg');
+    if(existing){
+      const tmp=document.createElement('div');
+      tmp.innerHTML=newSvg;
+      const newEl=tmp.firstChild;
+      newEl.id='p-svg';
+      existing.replaceWith(newEl);
+    }
+  }
+  // Also update inventory preview
+  const invRobot=document.querySelector('.equip-robot');
+  if(invRobot) invRobot.innerHTML=buildPlayerSVG(inv.equipped,64);
+}
+
+// ===== STAGES =====
+const STAGES=[
+  {id:1,name:'地上都市',sub:'辺の長さ',enemy:'スコーピオン',eHp:8,boss:false,bgmKey:'rf',
+   bg:`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 380 300" preserveAspectRatio="xMidYMid slice"><rect width="380" height="300" fill="#0a0c18"/><rect x="0" y="210" width="380" height="90" fill="#0d1020"/><rect x="10" y="130" width="40" height="90" fill="#111830"/><rect x="15" y="135" width="8" height="8" fill="#1a3060" opacity="0.8"/><rect x="28" y="135" width="8" height="8" fill="#fcd34d" opacity="0.5"/><rect x="60" y="90" width="55" height="130" fill="#131928"/><rect x="65" y="95" width="10" height="10" fill="#fcd34d" opacity="0.5"/><rect x="130" y="70" width="35" height="150" fill="#111528"/><rect x="180" y="100" width="50" height="120" fill="#131928"/><rect x="245" y="80" width="30" height="140" fill="#111528"/><rect x="290" y="110" width="45" height="110" fill="#131928"/><rect x="345" y="95" width="35" height="125" fill="#111528"/><circle cx="320" cy="40" r="2" fill="#fff" opacity="0.6"/><circle cx="60" cy="25" r="1.5" fill="#fff" opacity="0.5"/><circle cx="200" cy="15" r="1" fill="#fff" opacity="0.7"/></svg>`,
+   questions:[
+     {type:'svg_len',lbl:'ミッション — 正しい長さを選べ',txt:'「敵ロボットまでの距離を測れ！どの線が6cmだ？」',hint:'目盛りを一つずつ数えてみよう。',correct:1,choices:[3,6,4],fb:'正解！6cmのルートを確認した！',wfb:'違う。目盛りを一つずつ数えてみろ。'},
+     {type:'card',lbl:'ミッション — 辺の長さを求めよ',txt:'「壁の修復板が必要だ。縦4cm・横?cmで周りの長さが18cmのとき、横は何cmだ？」',hint:'(縦+横)×2=18。まず合計を求めろ。',correct:5,choices:[3,5,7,9],fb:'完璧！横5cm確認！',wfb:'(縦+横)×2=18だ。もう一度計算しろ。'},
+     {type:'svg_tri',lbl:'ミッション — 図形を識別せよ',txt:'「正三角形の装甲板はどれだ？」',hint:'正三角形は3辺すべて同じ長さ。',correct:0,choices:['正三角形','二等辺','直角'],fb:'識別成功！正三角形の装甲を発見！',wfb:'3辺の長さをよく見ろ。'},
+     {type:'svg_len',lbl:'ミッション — 長さを測れ',txt:'「センサーの到達距離を確認しろ！どの線が4cmだ？」',hint:'4cmは3cmより長く6cmより短い。',correct:2,choices:[6,3,4],fb:'正解！4cmのセンサー範囲を確認した！',wfb:'もう一度よく見ろ。4cmはどれだ？'},
+     {type:'card',lbl:'ミッション — 周りの長さを求めよ',txt:'「シールドの外周を計算しろ！一辺5cmの正方形の周りの長さは？」',hint:'正方形は4辺すべて同じ長さ。5×4だ。',correct:20,choices:[15,20,25,30],fb:'完璧！周りの長さは20cm！',wfb:'正方形の辺は4本だ。5×4を計算しろ。'},
+     {type:'card',lbl:'ミッション — 辺の長さを特定せよ',txt:'「装甲パネルを発注しろ！縦3cm・横?cmで周りの長さが14cmのとき、横は何cmだ？」',hint:'(縦+横)×2=14。縦と横の合計は7cm。',correct:4,choices:[3,4,5,6],fb:'正解！横4cm！パネル発注完了！',wfb:'(縦+横)×2=14。縦3cmだから横は？'},
+     {type:'svg_len',lbl:'ミッション — 最短ルートを選べ',txt:'「敵基地への最短ルートを計算しろ！どの線が8cmだ？」',hint:'8cmは一番長い線だ。',correct:0,choices:[8,5,3],fb:'正解！8cmの最短ルートを特定した！',wfb:'8cmを探せ。一番長いものはどれだ？'},
+     {type:'card',lbl:'ミッション — 残りの辺を求めよ',txt:'「通信ケーブルの長さを求めろ！縦6cm・横?cmで周りの長さが26cmのとき、横は何cmだ？」',hint:'(縦+横)×2=26。縦と横の合計は13cm。',correct:7,choices:[5,6,7,8],fb:'完璧！横7cm！ケーブル接続完了！',wfb:'(縦+横)×2=26。縦6cmだから横は？'},
+     {type:'card',lbl:'ミッション — 正しい長さを選べ',txt:'「レーザーの射程距離を設定しろ！10cmの半分の長さは何cmだ？」',hint:'半分は÷2だ。10÷2を計算しろ。',correct:5,choices:[3,4,5,6],fb:'正解！5cm！レーザー照準完了！',wfb:'10の半分は？10÷2を計算しろ。'},
+   ]},
+  {id:2,name:'荒野',sub:'角度',enemy:'デザートクロウ',eHp:10,boss:false,bgmKey:'rf',
+   bg:`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 380 300" preserveAspectRatio="xMidYMid slice"><rect width="380" height="300" fill="#120e08"/><rect x="0" y="210" width="380" height="90" fill="#1a120a"/><polygon points="0,210 60,150 120,210" fill="#1e1408"/><polygon points="80,210 160,110 240,210" fill="#211608"/><polygon points="200,210 270,130 340,210" fill="#1e1408"/><circle cx="310" cy="55" r="10" fill="#ff8c00" opacity="0.12"/><circle cx="50" cy="30" r="1.5" fill="#fff" opacity="0.6"/></svg>`,
+   questions:[
+     {type:'card',lbl:'ミッション — 角度を計算せよ',txt:'「砲台の射角を設定しろ！三角形の内角の和は何度だ？」',hint:'三角形の内角の和はいつも同じ値だ。',correct:180,choices:[90,180,270,360],fb:'正解！内角の和は180度。射角設定完了！',wfb:'三角形の角を全部足してみろ。'},
+     {type:'card',lbl:'ミッション — 残りの角を求めよ',txt:'「レーダーを合わせろ！三角形の2つの角が40度と70度のとき、残りは何度？」',hint:'180から40と70を引け。',correct:70,choices:[60,70,80,90],fb:'完璧！残りの角は70度！',wfb:'180-40-70=? もう一度計算しろ。'},
+     {type:'card',lbl:'ミッション — 角度を求めよ',txt:'「砲台の向きを修正しろ！三角形の2つの角が60度と60度のとき、残りは何度だ？」',hint:'180から60と60を引け。',correct:60,choices:[50,60,70,80],fb:'正解！60度！砲台修正完了！',wfb:'180-60-60=? 計算しろ。'},
+     {type:'card',lbl:'ミッション — 直角を確認せよ',txt:'「センサーの角度を確認しろ！直角は何度だ？」',hint:'直角は正方形の角と同じ。',correct:90,choices:[45,60,90,120],fb:'正解！90度！センサー設定完了！',wfb:'直角は正方形の角の大きさだ。何度だ？'},
+     {type:'card',lbl:'ミッション — 角度を計算せよ',txt:'「ミサイルの射角を設定しろ！三角形の2つの角が30度と90度のとき、残りは何度だ？」',hint:'180から30と90を引け。',correct:60,choices:[50,60,70,80],fb:'完璧！60度！ミサイル発射準備完了！',wfb:'180-30-90=? もう一度計算しろ。'},
+     {type:'card',lbl:'ミッション — 角度を特定せよ',txt:'「レーザー砲の照準を合わせろ！三角形の2つの角が50度と80度のとき、残りは何度だ？」',hint:'180から50と80を引け。',correct:50,choices:[40,50,60,70],fb:'正解！50度！レーザー砲照準完了！',wfb:'180-50-80=? 計算しろ。'},
+   ]},
+  {id:3,name:'ロケット基地',sub:'面積',enemy:'ランチャードーン',eHp:12,boss:false,bgmKey:'rf',
+   bg:`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 380 300" preserveAspectRatio="xMidYMid slice"><rect width="380" height="300" fill="#080c14"/><rect x="0" y="220" width="380" height="80" fill="#0a0e18"/><rect x="60" y="80" width="20" height="150" fill="#111828"/><polygon points="60,80 70,50 80,80" fill="#1a2848"/><rect x="160" y="60" width="24" height="170" fill="#111828"/><polygon points="160,60 172,25 184,60" fill="#1a2848"/><rect x="280" y="90" width="18" height="140" fill="#111828"/><polygon points="280,90 289,62 298,90" fill="#1a2848"/><circle cx="50" cy="25" r="1.5" fill="#fff" opacity="0.7"/><circle cx="180" cy="15" r="1" fill="#fff" opacity="0.6"/></svg>`,
+   questions:[
+     {type:'card',lbl:'ミッション — 面積を計算せよ',txt:'「燃料タンクのパネル面積を算出しろ！縦6cm×横8cmの長方形の面積は？」',hint:'面積=縦×横だ。',correct:48,choices:[28,36,48,56],fb:'正解！面積は48cm²！パネル発注完了！',wfb:'面積=縦×横。6×8を計算しろ。'},
+     {type:'card',lbl:'ミッション — 面積を求めよ',txt:'「格納庫に収まるか確認しろ！一辺7cmの正方形の面積は？」',hint:'正方形の面積=辺×辺。',correct:49,choices:[28,42,49,56],fb:'完璧！49cm²！格納庫に収まる！',wfb:'正方形は辺×辺だ。7×7を計算しろ。'},
+     {type:'card',lbl:'ミッション — 面積を算出せよ',txt:'「エンジン冷却パネルの面積を求めろ！縦5cm×横9cmの長方形の面積は？」',hint:'面積=縦×横。5×9を計算しろ。',correct:45,choices:[35,40,45,50],fb:'正解！45cm²！冷却パネル取り付け完了！',wfb:'5×9を計算しろ。'},
+     {type:'card',lbl:'ミッション — 面積を比較せよ',txt:'「発着場の広さを確認しろ！縦4cm×横6cmの長方形の面積は？」',hint:'面積=縦×横。4×6を計算しろ。',correct:24,choices:[18,20,24,28],fb:'完璧！24cm²！発着場の広さを確認した！',wfb:'4×6を計算しろ。'},
+     {type:'card',lbl:'ミッション — 太陽光パネルの面積',txt:'「太陽光パネルの出力を計算しろ！一辺9cmの正方形の面積は？」',hint:'正方形の面積=辺×辺。9×9だ。',correct:81,choices:[63,72,81,90],fb:'正解！81cm²！パネル出力計算完了！',wfb:'9×9を計算しろ。'},
+     {type:'card',lbl:'ミッション — 格納スペースを確認せよ',txt:'「ロボットの格納スペースを確認しろ！縦3cm×横12cmの長方形の面積は？」',hint:'面積=縦×横。3×12だ。',correct:36,choices:[30,36,42,48],fb:'完璧！36cm²！格納スペース確認完了！',wfb:'3×12を計算しろ。'},
+   ]},
+  {id:4,name:'衛星軌道',sub:'体積',enemy:'オービットスパイダー',eHp:15,boss:false,bgmKey:'rf',
+   bg:`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 380 300" preserveAspectRatio="xMidYMid slice"><rect width="380" height="300" fill="#040814"/><circle cx="190" cy="160" r="70" fill="#061020" stroke="#1a3060" stroke-width="0.5"/><ellipse cx="190" cy="160" rx="150" ry="30" fill="none" stroke="#1a3060" stroke-width="0.5" opacity="0.5"/><circle cx="190" cy="160" r="20" fill="#0d2040"/><circle cx="40" cy="40" r="1.5" fill="#fff" opacity="0.8"/><circle cx="340" cy="30" r="1" fill="#fff" opacity="0.7"/></svg>`,
+   questions:[
+     {type:'card',lbl:'ミッション — 体積を計算せよ',txt:'「酸素ボンベの容量を計算しろ！縦3cm・横4cm・高さ5cmの直方体の体積は？」',hint:'体積=縦×横×高さだ。',correct:60,choices:[36,48,60,72],fb:'正解！体積は60cm³！酸素ボンベ確保！',wfb:'体積=縦×横×高さ。3×4×5を計算しろ。'},
+     {type:'card',lbl:'ミッション — 体積を求めよ',txt:'「デブリの大きさを推定しろ！一辺4cmの立方体の体積は？」',hint:'立方体の体積=辺×辺×辺。',correct:64,choices:[48,56,64,72],fb:'完璧！64cm³！デブリ回避ルート確定！',wfb:'立方体は辺×辺×辺。4×4×4を計算しろ。'},
+     {type:'card',lbl:'ミッション — 燃料タンクの体積',txt:'「燃料タンクの容量を計算しろ！縦2cm・横5cm・高さ6cmの直方体の体積は？」',hint:'体積=縦×横×高さ。2×5×6だ。',correct:60,choices:[48,54,60,66],fb:'正解！60cm³！燃料タンク容量確認！',wfb:'2×5×6を計算しろ。'},
+     {type:'card',lbl:'ミッション — コンテナの体積',txt:'「補給コンテナに入るか確認しろ！縦4cm・横4cm・高さ4cmの立方体の体積は？」',hint:'立方体は辺×辺×辺。4×4×4だ。',correct:64,choices:[48,56,64,72],fb:'完璧！64cm³！コンテナに収まる！',wfb:'4×4×4を計算しろ。'},
+     {type:'card',lbl:'ミッション — 推進剤タンクの体積',txt:'「推進剤タンクの体積を求めろ！縦2cm・横3cm・高さ10cmの直方体の体積は？」',hint:'体積=縦×横×高さ。2×3×10だ。',correct:60,choices:[50,55,60,65],fb:'正解！60cm³！推進剤量確認完了！',wfb:'2×3×10を計算しろ。'},
+     {type:'card',lbl:'ミッション — 居住区の体積',txt:'「宇宙船の居住区の体積を計算しろ！縦5cm・横6cm・高さ3cmの直方体の体積は？」',hint:'体積=縦×横×高さ。5×6×3だ。',correct:90,choices:[75,80,90,100],fb:'完璧！90cm³！居住区設計完了！',wfb:'5×6×3を計算しろ。'},
+   ]},
+  {id:5,name:'衛星砲台',sub:'複合★BOSS',enemy:'オメガキャノン',eHp:25,boss:true,bgmKey:'cj',
+   bg:`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 380 300" preserveAspectRatio="xMidYMid slice"><rect width="380" height="300" fill="#050814"/><circle cx="190" cy="150" r="130" fill="none" stroke="#1a2060" stroke-width="0.5" opacity="0.4"/><circle cx="190" cy="150" r="90" fill="none" stroke="#1a2060" stroke-width="0.4" opacity="0.3"/><rect x="162" y="55" width="56" height="190" rx="4" fill="#0d1030" stroke="#2a3060" stroke-width="0.5"/><rect x="138" y="118" width="104" height="64" rx="4" fill="#0d1030" stroke="#2a3060" stroke-width="0.5"/><circle cx="190" cy="150" r="10" fill="#c0392b" opacity="0.9"/><circle cx="190" cy="150" r="5" fill="#ff6b6b"/><circle cx="40" cy="40" r="1" fill="#fff" opacity="0.8"/><circle cx="340" cy="80" r="1.5" fill="#fff" opacity="0.6"/></svg>`,
+   questions:[
+     {type:'card',lbl:'最終ミッション — 第1キー',txt:'「衛星砲のロックを解除しろ！1/2 + 1/4 = ?」',hint:'通分して足せ。1/2 = 2/4 だ。',correct:'3/4',choices:['1/2','2/6','3/4','1'],fb:'正解！3/4。第1キー解除！',wfb:'通分を確認しろ。分母を揃えてから足せ。'},
+     {type:'card',lbl:'最終ミッション — 第2キー',txt:'「正方形の辺が3cmのとき面積は何cm²だ？」',hint:'正方形の面積=辺×辺。',correct:9,choices:[6,9,12,16],fb:'完璧！9cm²！第2キー解除！',wfb:'正方形の面積の公式を思い出せ！'},
+     {type:'card',lbl:'最終ミッション — 最終キー',txt:'「最終ロックだ！縦2cm・横3cm・高さ4cmの直方体の体積は？」',hint:'体積=縦×横×高さ。',correct:24,choices:[18,24,30,36],fb:'全キー解除！衛星砲台停止！ミッション完了！',wfb:'縦×横×高さ。2×3×4を計算しろ。'},
+     {type:'card',lbl:'最終ミッション — セキュリティコード',txt:'「セキュリティコードを解読しろ！三角形の2つの角が55度と75度のとき、残りは何度だ？」',hint:'180から55と75を引け。',correct:50,choices:[40,50,60,70],fb:'正解！50度！セキュリティ突破！',wfb:'180-55-75=? 計算しろ。'},
+     {type:'card',lbl:'最終ミッション — 防衛システム',txt:'「防衛システムを解除しろ！1/3 + 1/3 = ?」',hint:'分母が同じなら分子を足せ。',correct:'2/3',choices:['1/3','2/3','2/6','1'],fb:'完璧！2/3！防衛システム解除！',wfb:'分母が同じなら分子だけ足せ。'},
+     {type:'card',lbl:'最終ミッション — 砲台制御装置',txt:'「制御装置を無効化しろ！縦4cm×横5cmの長方形の面積は？」',hint:'面積=縦×横。4×5だ。',correct:20,choices:[16,18,20,22],fb:'正解！20cm²！制御装置無効化！',wfb:'4×5を計算しろ。'},
+     {type:'card',lbl:'最終ミッション — 核融合炉',txt:'「核融合炉の出力を計算しろ！一辺5cmの立方体の体積は？」',hint:'立方体の体積=辺×辺×辺。5×5×5だ。',correct:125,choices:[100,115,125,135],fb:'完璧！125cm³！核融合炉停止！',wfb:'5×5×5を計算しろ。'},
+     {type:'card',lbl:'最終ミッション — メインキャノン',txt:'「メインキャノンの照準を狂わせろ！1/2 - 1/4 = ?」',hint:'通分して引け。1/2 = 2/4 だ。',correct:'1/4',choices:['1/4','1/2','3/4','0'],fb:'正解！1/4！照準を狂わせた！',wfb:'2/4 - 1/4 = ? 分子を引け。'},
+     {type:'card',lbl:'最終ミッション — 最終決戦',txt:'「最後の壁だ！縦3cm・横3cm・高さ3cmの立方体の体積は？」',hint:'立方体の体積=辺×辺×辺。3×3×3だ。',correct:27,choices:[18,24,27,30],fb:'全システム停止！オメガキャノンを倒した！銀河に平和が戻った！',wfb:'3×3×3を計算しろ。'},
+   ]},
+  // ===== WORLD 2 =====
+  {id:6,name:'アステロイド',sub:'分数の足し算',enemy:'ロックシューター',eHp:10,boss:false,bgmKey:'rf',
+   bg:`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 380 300" preserveAspectRatio="xMidYMid slice"><rect width="380" height="300" fill="#080610"/><ellipse cx="120" cy="160" rx="60" ry="50" fill="#1a1428" stroke="#2a2040" stroke-width="1"/><ellipse cx="260" cy="120" rx="40" ry="35" fill="#1a1428" stroke="#2a2040" stroke-width="1"/><ellipse cx="320" cy="220" rx="30" ry="25" fill="#151020" stroke="#2a2040" stroke-width="0.5"/><ellipse cx="60" cy="240" rx="25" ry="20" fill="#151020" stroke="#2a2040" stroke-width="0.5"/><circle cx="50" cy="30" r="1.5" fill="#fff" opacity="0.8"/><circle cx="180" cy="20" r="1" fill="#fff" opacity="0.6"/><circle cx="320" cy="40" r="1.5" fill="#fff" opacity="0.5"/><circle cx="250" cy="270" r="1" fill="#fff" opacity="0.7"/><circle cx="150" cy="280" r="1" fill="#fff" opacity="0.5"/></svg>`,
+   questions:[
+     {type:'card',lbl:'ミッション — 分数を合計せよ',txt:'「隕石の破片を合わせてシールドを修復しろ！1/4 + 1/4 = ?」',hint:'分母が同じなら分子だけ足せ。1+1=2だ。',correct:'2/4',choices:['1/4','2/4','2/8','1/2'],fb:'正解！2/4！シールド修復開始！',wfb:'分母が同じとき、分子だけ足せ。'},
+     {type:'card',lbl:'ミッション — 燃料を計算しろ',txt:'「残燃料を確認しろ！1/3 + 1/3 = ?」',hint:'分母が同じなら分子を足せ。',correct:'2/3',choices:['1/3','2/3','2/6','1'],fb:'完璧！2/3！燃料残量確認完了！',wfb:'分母が同じなら分子だけ足せ。1+1=?'},
+     {type:'card',lbl:'ミッション — 資源を合算せよ',txt:'「採掘した資源を合算しろ！1/2 + 1/4 = ?」',hint:'通分して足せ。1/2 = 2/4 だ。',correct:'3/4',choices:['2/6','3/4','2/4','1'],fb:'正解！3/4！資源合算完了！',wfb:'通分しろ。1/2を4分母に直せ。'},
+     {type:'card',lbl:'ミッション — エネルギーを計算しろ',txt:'「ソーラーパネルのエネルギーを合算しろ！1/6 + 1/6 = ?」',hint:'分母が同じなら分子だけ足せ。',correct:'2/6',choices:['1/6','2/6','2/12','1/3'],fb:'完璧！2/6！エネルギー計算完了！',wfb:'分母が同じなら分子だけ足せ。'},
+     {type:'card',lbl:'ミッション — 修復材料を確認しろ',txt:'「修復材料の合計を求めろ！1/5 + 2/5 = ?」',hint:'分母が同じなら分子を足せ。1+2=?',correct:'3/5',choices:['2/5','3/5','3/10','1'],fb:'正解！3/5！修復材料確認完了！',wfb:'分母が同じなら分子だけ足せ。1+2=?'},
+     {type:'card',lbl:'ミッション — 酸素量を計算しろ',txt:'「酸素タンクの残量を合算しろ！1/3 + 1/6 = ?」',hint:'通分して足せ。1/3 = 2/6 だ。',correct:'3/6',choices:['2/9','3/6','2/6','1/2'],fb:'完璧！3/6！酸素量確認完了！',wfb:'通分しろ。1/3を6分母に直せ。'},
+     {type:'card',lbl:'ミッション — シールド強度を計算しろ',txt:'「シールドの強度を合算しろ！2/5 + 1/5 = ?」',hint:'分母が同じなら分子を足せ。2+1=?',correct:'3/5',choices:['2/5','3/5','3/10','4/5'],fb:'正解！3/5！シールド強度確認！',wfb:'2+1=3だ。分母はそのまま。'},
+     {type:'card',lbl:'ミッション — 航行距離を計算しろ',txt:'「今日の航行距離を合算しろ！1/4 + 2/4 = ?」',hint:'分母が同じなら分子を足せ。1+2=?',correct:'3/4',choices:['2/4','3/4','3/8','1'],fb:'完璧！3/4！航行距離確認完了！',wfb:'1+2=3だ。分母はそのまま4。'},
+     {type:'card',lbl:'ミッション — 合成燃料を計算しろ',txt:'「合成燃料の量を計算しろ！1/2 + 1/6 = ?」',hint:'通分して足せ。1/2 = 3/6 だ。',correct:'4/6',choices:['2/8','4/6','2/6','3/6'],fb:'正解！4/6！合成燃料計算完了！',wfb:'通分しろ。1/2を6分母に直せ。'},
+   ]},
+  {id:7,name:'廃棄ロケット',sub:'分数の引き算',enemy:'スクラップハンター',eHp:12,boss:false,bgmKey:'rf',
+   bg:`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 380 300" preserveAspectRatio="xMidYMid slice"><rect width="380" height="300" fill="#0a0a0c"/><rect x="160" y="40" width="30" height="180" rx="4" fill="#1a1820" stroke="#2a2840" stroke-width="1"/><polygon points="160,40 175,10 190,40" fill="#141220"/><rect x="140" y="140" width="20" height="60" rx="2" fill="#141220"/><rect x="190" y="140" width="20" height="60" rx="2" fill="#141220"/><rect x="80" y="100" width="16" height="120" rx="3" fill="#111018"/><polygon points="80,100 88,75 96,100" fill="#0e0c18"/><rect x="270" y="80" width="20" height="150" rx="3" fill="#111018"/><polygon points="270,80 280,55 290,80" fill="#0e0c18"/><circle cx="40" cy="50" r="1.5" fill="#fff" opacity="0.6"/><circle cx="320" cy="30" r="1" fill="#fff" opacity="0.7"/><circle cx="200" cy="20" r="1.5" fill="#fff" opacity="0.5"/></svg>`,
+   questions:[
+     {type:'card',lbl:'ミッション — 燃料残量を計算しろ',txt:'「残燃料を計算しろ！帰還できるか判断せよ！3/4 - 1/4 = ?」',hint:'分母が同じなら分子を引け。3-1=?',correct:'2/4',choices:['1/4','2/4','3/4','1/2'],fb:'正解！2/4！帰還可能だ！',wfb:'分母が同じなら分子だけ引け。3-1=?'},
+     {type:'card',lbl:'ミッション — 資源を使用した',txt:'「採掘した資源を使用した。残りを計算しろ！2/3 - 1/3 = ?」',hint:'分母が同じなら分子を引け。',correct:'1/3',choices:['1/3','2/3','1/6','0'],fb:'完璧！1/3！資源残量確認！',wfb:'2-1=1だ。分母はそのまま。'},
+     {type:'card',lbl:'ミッション — エネルギーを消費した',txt:'「エネルギーを消費した。残量を計算しろ！3/5 - 1/5 = ?」',hint:'分母が同じなら分子を引け。3-1=?',correct:'2/5',choices:['1/5','2/5','3/5','4/5'],fb:'正解！2/5！エネルギー残量確認！',wfb:'3-1=2だ。分母はそのまま5。'},
+     {type:'card',lbl:'ミッション — シールドがダメージを受けた',txt:'「シールドがダメージを受けた！残量を計算しろ！1/2 - 1/4 = ?」',hint:'通分して引け。1/2 = 2/4 だ。',correct:'1/4',choices:['1/4','1/2','3/4','0'],fb:'完璧！1/4！シールド残量確認！',wfb:'通分しろ。1/2を4分母に直せ。'},
+     {type:'card',lbl:'ミッション — 酸素を消費した',txt:'「酸素を消費した。残量を計算しろ！5/6 - 2/6 = ?」',hint:'分母が同じなら分子を引け。5-2=?',correct:'3/6',choices:['2/6','3/6','4/6','5/6'],fb:'正解！3/6！酸素残量確認！',wfb:'5-2=3だ。分母はそのまま6。'},
+     {type:'card',lbl:'ミッション — 修復材料を使った',txt:'「修復材料を使った。残りを計算しろ！3/4 - 1/2 = ?」',hint:'通分して引け。1/2 = 2/4 だ。',correct:'1/4',choices:['1/4','2/4','3/4','1/2'],fb:'完璧！1/4！修復材料残量確認！',wfb:'通分しろ。1/2を4分母に直せ。'},
+     {type:'card',lbl:'ミッション — 燃料を補給した後',txt:'「補給後の残量を計算しろ！4/5 - 2/5 = ?」',hint:'分母が同じなら分子を引け。4-2=?',correct:'2/5',choices:['1/5','2/5','3/5','4/5'],fb:'正解！2/5！燃料残量確認！',wfb:'4-2=2だ。分母はそのまま5。'},
+     {type:'card',lbl:'ミッション — 距離を計算しろ',txt:'「残りの航行距離を計算しろ！1 - 1/3 = ?」',hint:'1 = 3/3 に直してから引け。',correct:'2/3',choices:['1/3','2/3','3/3','1/2'],fb:'完璧！2/3！残り航行距離確認！',wfb:'1を3/3に直してから3/3-1/3を計算しろ。'},
+     {type:'card',lbl:'ミッション — 電力を確認しろ',txt:'「電力残量を計算しろ！5/6 - 1/3 = ?」',hint:'通分して引け。1/3 = 2/6 だ。',correct:'3/6',choices:['4/6','3/6','2/6','1/6'],fb:'正解！3/6！電力残量確認完了！',wfb:'通分しろ。1/3を6分母に直せ。'},
+   ]},
+  {id:8,name:'大気圏',sub:'分数の掛け算',enemy:'アトモスファイア',eHp:15,boss:false,bgmKey:'rf',
+   bg:`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 380 300" preserveAspectRatio="xMidYMid slice"><rect width="380" height="300" fill="#0a0c18"/><rect x="0" y="0" width="380" height="80" fill="#080a14"/><rect x="0" y="80" width="380" height="60" fill="#0d1020" opacity="0.8"/><rect x="0" y="140" width="380" height="50" fill="#111830" opacity="0.7"/><rect x="0" y="190" width="380" height="40" fill="#1a2040" opacity="0.6"/><rect x="0" y="230" width="380" height="30" fill="#2030601" opacity="0.5"/><rect x="0" y="260" width="380" height="40" fill="#304080" opacity="0.4"/><circle cx="60" cy="30" r="2" fill="#fff" opacity="0.7"/><circle cx="200" cy="20" r="1.5" fill="#fff" opacity="0.6"/><circle cx="340" cy="35" r="1" fill="#fff" opacity="0.5"/><line x1="0" y1="290" x2="380" y2="270" stroke="#ff8c00" stroke-width="2" opacity="0.3"/></svg>`,
+   questions:[
+     {type:'card',lbl:'ミッション — 突入角度を計算しろ',txt:'「突入角度の倍率を計算しろ！1/2 × 1/2 = ?」',hint:'分子同士・分母同士をかけろ。1×1=1、2×2=4。',correct:'1/4',choices:['1/2','1/4','2/4','1/6'],fb:'正解！1/4！突入角度計算完了！',wfb:'分子同士・分母同士をかけろ。'},
+     {type:'card',lbl:'ミッション — エネルギー効率を計算しろ',txt:'「エネルギー効率を計算しろ！1/3 × 1/2 = ?」',hint:'分子同士・分母同士をかけろ。1×1=1、3×2=6。',correct:'1/6',choices:['1/3','1/6','2/6','1/5'],fb:'完璧！1/6！エネルギー効率確認！',wfb:'1×1=1、3×2=6だ。'},
+     {type:'card',lbl:'ミッション — 速度を計算しろ',txt:'「突入速度の割合を計算しろ！2/3 × 1/2 = ?」',hint:'分子同士・分母同士をかけろ。2×1=2、3×2=6。',correct:'2/6',choices:['1/3','2/6','3/6','1/6'],fb:'正解！2/6！速度計算完了！',wfb:'2×1=2、3×2=6だ。'},
+     {type:'card',lbl:'ミッション — 熱量を計算しろ',txt:'「大気圏突入時の熱量を計算しろ！1/4 × 2/3 = ?」',hint:'分子同士・分母同士をかけろ。1×2=2、4×3=12。',correct:'2/12',choices:['1/6','2/12','3/12','1/12'],fb:'完璧！2/12！熱量計算完了！',wfb:'1×2=2、4×3=12だ。'},
+     {type:'card',lbl:'ミッション — 距離を計算しろ',txt:'「残り距離の割合を計算しろ！3/4 × 1/3 = ?」',hint:'分子同士・分母同士をかけろ。3×1=3、4×3=12。',correct:'3/12',choices:['1/4','3/12','4/12','1/3'],fb:'正解！3/12！距離計算完了！',wfb:'3×1=3、4×3=12だ。'},
+     {type:'card',lbl:'ミッション — 推力を計算しろ',txt:'「ブースターの推力を計算しろ！1/2 × 3/4 = ?」',hint:'分子同士・分母同士をかけろ。1×3=3、2×4=8。',correct:'3/8',choices:['3/6','3/8','4/8','2/8'],fb:'完璧！3/8！推力計算完了！',wfb:'1×3=3、2×4=8だ。'},
+     {type:'card',lbl:'ミッション — 冷却量を計算しろ',txt:'「冷却システムの能力を計算しろ！2/5 × 1/2 = ?」',hint:'分子同士・分母同士をかけろ。2×1=2、5×2=10。',correct:'2/10',choices:['1/5','2/10','3/10','1/10'],fb:'正解！2/10！冷却量計算完了！',wfb:'2×1=2、5×2=10だ。'},
+     {type:'card',lbl:'ミッション — 燃焼率を計算しろ',txt:'「燃料の燃焼率を計算しろ！1/3 × 3/4 = ?」',hint:'分子同士・分母同士をかけろ。1×3=3、3×4=12。',correct:'3/12',choices:['1/4','3/12','4/12','2/12'],fb:'完璧！3/12！燃焼率計算完了！',wfb:'1×3=3、3×4=12だ。'},
+     {type:'card',lbl:'ミッション — 減速率を計算しろ',txt:'「減速システムの効率を計算しろ！2/3 × 3/5 = ?」',hint:'分子同士・分母同士をかけろ。2×3=6、3×5=15。',correct:'6/15',choices:['5/15','6/15','6/8','2/5'],fb:'正解！6/15！減速率計算完了！大気圏突入成功！',wfb:'2×3=6、3×5=15だ。'},
+   ]},
+  {id:9,name:'地上の廃墟',sub:'分数の割り算',enemy:'ルインガーディアン',eHp:18,boss:false,bgmKey:'rf',
+   bg:`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 380 300" preserveAspectRatio="xMidYMid slice"><rect width="380" height="300" fill="#0c0c0c"/><rect x="0" y="220" width="380" height="80" fill="#0f0f10"/><rect x="20" y="120" width="30" height="110" fill="#141414" stroke="#1a1a1a" stroke-width="0.5"/><rect x="25" y="80" width="20" height="50" fill="#141414"/><rect x="30" y="130" width="8" height="8" fill="#1a1a20" opacity="0.5"/><rect x="70" y="100" width="40" height="130" fill="#121212"/><rect x="75" y="105" width="10" height="10" fill="#1a1a20" opacity="0.3"/><rect x="75" y="122" width="10" height="10" fill="#1a1a20" opacity="0.3"/><rect x="130" y="140" width="25" height="90" fill="#141414"/><rect x="200" y="90" width="50" height="140" fill="#121212"/><rect x="205" y="95" width="12" height="12" fill="#1a1a20" opacity="0.3"/><rect x="270" y="110" width="35" height="120" fill="#141414"/><rect x="320" y="130" width="40" height="100" fill="#121212"/><circle cx="100" cy="40" r="1" fill="#888" opacity="0.3"/><circle cx="250" cy="30" r="1" fill="#888" opacity="0.2"/></svg>`,
+   questions:[
+     {type:'card',lbl:'ミッション — 資源を分配しろ',txt:'「回収した資源を仲間で分配しろ！1/2 ÷ 2 = ?」',hint:'÷2は×1/2と同じだ。1/2×1/2を計算しろ。',correct:'1/4',choices:['1/2','1/4','2/4','1/6'],fb:'正解！1/4！資源分配完了！',wfb:'÷2は×1/2だ。1/2×1/2=?'},
+     {type:'card',lbl:'ミッション — 燃料を分割しろ',txt:'「燃料を3機に分割しろ！1/3 ÷ 3 = ?」',hint:'÷3は×1/3と同じだ。1/3×1/3を計算しろ。',correct:'1/9',choices:['1/3','1/6','1/9','3/9'],fb:'完璧！1/9！燃料分割完了！',wfb:'÷3は×1/3だ。1/3×1/3=?'},
+     {type:'card',lbl:'ミッション — 等分しろ',txt:'「修復材料を2等分しろ！3/4 ÷ 2 = ?」',hint:'÷2は×1/2と同じだ。3/4×1/2を計算しろ。',correct:'3/8',choices:['1/4','3/8','3/4','6/8'],fb:'正解！3/8！修復材料等分完了！',wfb:'÷2は×1/2だ。3×1=3、4×2=8。'},
+     {type:'card',lbl:'ミッション — 分数で割れ',txt:'「エネルギーを分配しろ！1/2 ÷ 1/4 = ?」',hint:'割る数の分母と分子をひっくり返してかけろ。1/2×4/1を計算しろ。',correct:'2',choices:['1/8','1/4','2','4'],fb:'完璧！2！エネルギー分配完了！',wfb:'1/4をひっくり返すと4/1だ。1/2×4/1=?'},
+     {type:'card',lbl:'ミッション — 割り算で距離を求めろ',txt:'「残りの距離を計算しろ！2/3 ÷ 1/3 = ?」',hint:'1/3をひっくり返して3/1にしてかけろ。',correct:'2',choices:['1','2','3','2/9'],fb:'正解！2！距離計算完了！',wfb:'1/3をひっくり返すと3/1だ。2/3×3/1=?'},
+     {type:'card',lbl:'ミッション — 速度を計算しろ',txt:'「移動速度を計算しろ！3/4 ÷ 1/2 = ?」',hint:'1/2をひっくり返して2/1にしてかけろ。',correct:'3/2',choices:['3/8','3/2','6/4','1'],fb:'完璧！3/2！速度計算完了！',wfb:'1/2をひっくり返すと2/1だ。3/4×2/1=?'},
+     {type:'card',lbl:'ミッション — 燃料効率を計算しろ',txt:'「燃料効率を計算しろ！1/4 ÷ 1/2 = ?」',hint:'1/2をひっくり返して2/1にしてかけろ。',correct:'1/2',choices:['1/8','1/4','1/2','2'],fb:'正解！1/2！燃料効率計算完了！',wfb:'1/2をひっくり返すと2/1だ。1/4×2/1=?'},
+     {type:'card',lbl:'ミッション — 分配量を計算しろ',txt:'「物資を4隊に分配しろ！2/3 ÷ 4 = ?」',hint:'÷4は×1/4と同じだ。2/3×1/4を計算しろ。',correct:'2/12',choices:['1/6','2/12','8/3','1/12'],fb:'完璧！2/12！物資分配完了！',wfb:'÷4は×1/4だ。2×1=2、3×4=12。'},
+     {type:'card',lbl:'ミッション — 最終計算',txt:'「廃墟を脱出する前に最後の計算だ！3/5 ÷ 3/5 = ?」',hint:'同じ数で割ると答えは1になる。3/5×5/3を計算しろ。',correct:'1',choices:['1/5','3/5','1','5/3'],fb:'正解！1！廃墟脱出成功！地上都市へ向かえ！',wfb:'3/5をひっくり返すと5/3だ。3/5×5/3=?'},
+   ]},
+  {id:10,name:'地上都市（夜）',sub:'複合★BOSS',enemy:'ダークオメガ',eHp:30,boss:true,bgmKey:'cj',
+   bg:`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 380 300" preserveAspectRatio="xMidYMid slice"><rect width="380" height="300" fill="#060810"/><rect x="0" y="200" width="380" height="100" fill="#080a14"/><rect x="10" y="110" width="40" height="100" fill="#0d1020" stroke="#1a2040" stroke-width="0.5"/><rect x="15" y="115" width="8" height="8" fill="#ff4444" opacity="0.4"/><rect x="28" y="115" width="8" height="8" fill="#ff4444" opacity="0.3"/><rect x="60" y="70" width="55" height="140" fill="#0a0e1c" stroke="#1a2040" stroke-width="0.5"/><rect x="65" y="75" width="10" height="10" fill="#ff4444" opacity="0.3"/><rect x="80" y="75" width="10" height="10" fill="#880000" opacity="0.4"/><rect x="130" y="50" width="35" height="160" fill="#080c18" stroke="#1a2040" stroke-width="0.5"/><rect x="180" y="80" width="50" height="130" fill="#0a0e1c"/><rect x="245" y="60" width="30" height="150" fill="#080c18"/><rect x="290" y="90" width="45" height="120" fill="#0a0e1c"/><rect x="345" y="75" width="35" height="135" fill="#080c18"/><circle cx="190" cy="30" r="15" fill="#c0392b" opacity="0.2"/><circle cx="190" cy="30" r="8" fill="#c0392b" opacity="0.3"/><circle cx="190" cy="30" r="3" fill="#ff6b6b" opacity="0.6"/><circle cx="50" cy="20" r="1" fill="#ff4444" opacity="0.5"/><circle cx="320" cy="25" r="1" fill="#ff4444" opacity="0.4"/></svg>`,
+   questions:[
+     {type:'card',lbl:'最終ミッション — 第1キー：足し算',txt:'「最終防衛システムの第1キー！1/4 + 3/4 = ?」',hint:'分母が同じなら分子を足せ。1+3=?',correct:'1',choices:['3/4','4/4','1','2/4'],fb:'正解！第1キー解除！',wfb:'1+3=4だ。4/4=1になる。'},
+     {type:'card',lbl:'最終ミッション — 第2キー：引き算',txt:'「第2キー！1 - 1/3 = ?」',hint:'1を3/3に直してから引け。',correct:'2/3',choices:['1/3','2/3','3/3','1/2'],fb:'完璧！第2キー解除！',wfb:'1=3/3だ。3/3-1/3=?'},
+     {type:'card',lbl:'最終ミッション — 第3キー：掛け算',txt:'「第3キー！2/3 × 3/4 = ?」',hint:'分子同士・分母同士をかけろ。2×3=6、3×4=12。',correct:'6/12',choices:['5/12','6/12','1/2','6/7'],fb:'正解！第3キー解除！',wfb:'2×3=6、3×4=12だ。'},
+     {type:'card',lbl:'最終ミッション — 第4キー：割り算',txt:'「第4キー！1/2 ÷ 1/4 = ?」',hint:'1/4をひっくり返して4/1にしてかけろ。',correct:'2',choices:['1/8','1','2','4'],fb:'完璧！第4キー解除！',wfb:'1/4→4/1にしてかけろ。1/2×4/1=?'},
+     {type:'card',lbl:'最終ミッション — 第5キー：面積',txt:'「第5キー！縦5cm×横7cmの長方形の面積は？」',hint:'面積=縦×横。5×7だ。',correct:35,choices:[25,30,35,40],fb:'正解！第5キー解除！',wfb:'5×7を計算しろ。'},
+     {type:'card',lbl:'最終ミッション — 第6キー：角度',txt:'「第6キー！三角形の2つの角が45度と90度のとき、残りは何度だ？」',hint:'180から45と90を引け。',correct:45,choices:[35,45,55,65],fb:'完璧！第6キー解除！',wfb:'180-45-90=? 計算しろ。'},
+     {type:'card',lbl:'最終ミッション — 第7キー：体積',txt:'「第7キー！一辺3cmの立方体の体積は？」',hint:'立方体の体積=辺×辺×辺。3×3×3だ。',correct:27,choices:[18,24,27,30],fb:'正解！第7キー解除！',wfb:'3×3×3を計算しろ。'},
+     {type:'card',lbl:'最終ミッション — 第8キー：分数複合',txt:'「第8キー！3/4 ÷ 1/2 + 1/4 = ?」',hint:'まず3/4÷1/2を計算しろ。3/4×2/1=6/4。それに1/4を足せ。',correct:'7/4',choices:['5/4','6/4','7/4','8/4'],fb:'完璧！第8キー解除！',wfb:'3/4×2/1=6/4。6/4+1/4=?'},
+     {type:'card',lbl:'最終ミッション — 最終決戦',txt:'「最後だ！ダークオメガを倒せ！1/2 × 2/3 + 1/6 = ?」',hint:'まず1/2×2/3=2/6。それに1/6を足せ。',correct:'3/6',choices:['2/6','3/6','4/6','1'],fb:'全キー解除！ダークオメガを倒した！銀河に真の平和が訪れた！！',wfb:'1/2×2/3=2/6。2/6+1/6=?'},
+   ]},
+];
+
+// ===== STAGE/QUESTION LOGIC =====
+function buildSel(){
+  const el=document.getElementById('stage-sel');el.innerHTML='';
+  // Show label only from ng2+
+  if(gs.ng>=2){
+    const lbl=document.createElement('span');
+    lbl.style.cssText='font-size:9px;color:#fcd34d;align-self:center;padding:0 4px;white-space:nowrap;font-weight:700;';
+    lbl.textContent=(gs.world===1?'🌍':'🌌')+'W'+(gs.ng>1?gs.ng-1+'-':'')+gs.ng;
+    // Actually show W{ng} for world1, W{ng} for world2
+    lbl.textContent=(gs.world===1?'🌍W':'🌌W')+gs.ng;
+    el.appendChild(lbl);
+  } else {
+    const lbl=document.createElement('span');
+    lbl.style.cssText='font-size:9px;color:#7888bb;align-self:center;padding:0 4px;white-space:nowrap;';
+    lbl.textContent=gs.world===1?'🌍':'🌌';
+    el.appendChild(lbl);
+  }
+  // Show only current world's stages (0-4 for W1, 5-9 for W2)
+  const startIdx=(gs.world-1)*5;
+  const endIdx=startIdx+5;
+  for(let i=startIdx;i<endIdx;i++){
+    const s=STAGES[i];
+    const u=gs.unlocked[i],a=i===gs.stageIdx;
+    const b=document.createElement('button');
+    b.className='stage-btn'+(s.boss?' boss':'')+(a?' active':u?' unlocked':'');
+    b.innerHTML='S'+s.id+' '+s.name+(u?'':`<span class="lock-icon">🔒</span>`);
+    if(u)b.onclick=()=>{if(i!==gs.stageIdx){gs.stageIdx=i;gs.qIdx=0;initStage();buildSel();}};
+    el.appendChild(b);
+  }
+}
+function initStage(){
+  const s=curS();
+  document.getElementById('bg-layer').innerHTML=s.bg;
+  document.getElementById('stage-lbl').textContent=s.name+' — '+s.sub;
+  document.getElementById('e-name').textContent=s.enemy;
+  const eScale=(1+(gs.lv-1)*0.15)*(1+(gs.ng-1)*0.3);gs.eHp=Math.round(s.eHp*eScale);gs.eHpMax=gs.eHp;
+  gs.kills=gs.totalKills[gs.stageIdx];
+  updateEHp();updateKills();
+  setMsg('「'+s.enemy+'が現れた！問題を解いて攻撃せよ！」');
+  if(bgmOn)playBGM(s.bgmKey);
+  loadQ();
+}
+function loadQ(){
+  const q=curQ();
+  gs.answered=false;gs.hintUsed=false;
+  document.getElementById('q-lbl').textContent=q.lbl;
+  document.getElementById('q-txt').textContent=q.txt;
+  document.getElementById('q-vis').innerHTML='';
+  document.getElementById('cards').innerHTML='';
+  document.getElementById('fb').className='fb';
+  document.getElementById('next-btn').disabled=true;
+  duckBGM(true);
+  if(q.type==='svg_len')renderLen(q);
+  else if(q.type==='svg_tri')renderTri(q);
+  else renderCards(q);
+}
+function renderLen(q){
+  const w=document.createElement('div');w.className='svg-q-area';
+  q.choices.forEach((len,i)=>{
+    const d=document.createElement('div');d.className='svg-choice';d.id='sv'+i;
+    const px=len*10;
+    d.innerHTML=`<svg width="${px+16}" height="34" viewBox="0 0 ${px+16} 34"><line x1="8" y1="16" x2="${px+8}" y2="16" stroke="#4a6fff" stroke-width="3" stroke-linecap="round"/><line x1="8" y1="10" x2="8" y2="22" stroke="#4a6fff" stroke-width="2"/><line x1="${px+8}" y1="10" x2="${px+8}" y2="22" stroke="#4a6fff" stroke-width="2"/><text x="${(px+16)/2}" y="30" text-anchor="middle" fill="#7888bb" font-size="10">${len}cm</text></svg>`;
+    d.onclick=()=>selSvg(i,q);w.appendChild(d);
+  });
+  document.getElementById('q-vis').appendChild(w);
+}
+function renderTri(q){
+  const w=document.createElement('div');w.className='svg-q-area';
+  [{pts:'40,4 4,68 76,68'},{pts:'40,4 10,68 70,68'},{pts:'4,4 4,68 76,68'}].forEach((t,i)=>{
+    const d=document.createElement('div');d.className='svg-choice';d.id='sv'+i;
+    d.innerHTML=`<svg width="80" height="72" viewBox="0 0 80 72"><polygon points="${t.pts}" fill="#1a2060" stroke="#4a6fff" stroke-width="2"/></svg><div class="svg-lbl">${q.choices[i]}</div>`;
+    d.onclick=()=>selSvg(i,q);w.appendChild(d);
+  });
+  document.getElementById('q-vis').appendChild(w);
+}
+function renderCards(q){
+  q.choices.forEach((v,i)=>{
+    const b=document.createElement('button');b.className='card-btn';b.id='cd'+i;
+    b.textContent=v;b.onclick=()=>selCard(i,v,q);
+    document.getElementById('cards').appendChild(b);
+  });
+}
+function selSvg(i,q){if(gs.answered)return;document.querySelectorAll('.svg-choice').forEach(e=>e.classList.remove('selected'));document.getElementById('sv'+i).classList.add('selected');checkAns(i===q.correct,i,q,'sv');}
+function selCard(i,v,q){if(gs.answered)return;document.querySelectorAll('.card-btn').forEach(e=>e.classList.remove('selected'));document.getElementById('cd'+i).classList.add('selected');checkAns(v===q.correct,i,q,'cd');}
+
+function checkAns(ok,idx,q,pfx){
+  gs.answered=true;
+  const fb=document.getElementById('fb');
+  fb.className='fb show '+(ok?'ok':'ng');
+  if(ok){
+    SE.correct();duckBGM(false);
+    fb.textContent='✓ '+q.fb+(gs.hintUsed?'':' ボーナス+4XP！');
+    document.getElementById(pfx+idx).classList.add('correct');
+    gs.streak++;updateStreak();gainXP(gs.hintUsed?8:12);
+    setTimeout(()=>doAttack(),150);
+    document.getElementById('next-btn').disabled=false;
+  } else {
+    SE.wrong();duckBGM(false);
+    fb.textContent='✗ '+q.wfb;
+    document.getElementById(pfx+idx).classList.add('wrong');
+    gs.streak=0;updateStreak();
+    setTimeout(()=>enemyAtk(),150);
+    setTimeout(()=>{document.getElementById(pfx+idx).classList.remove('wrong','selected');gs.answered=false;fb.className='fb';},1800);
+  }
+}
+
+function spawnParticles(x,y,color,count){
+  const ba=document.getElementById('battle-area');
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');p.className='particle';
+    const a=Math.random()*Math.PI*2,dist=30+Math.random()*60,size=4+Math.random()*8;
+    p.style.cssText=`left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:${color};--end:translate(${Math.cos(a)*dist}px,${Math.sin(a)*dist}px);animation-duration:${0.5+Math.random()*0.4}s;`;
+    ba.appendChild(p);setTimeout(()=>p.remove(),1000);
+  }
+}
+function flashBA(color){
+  const fl=document.createElement('div');fl.className='flash-overlay';fl.style.background=color;
+  document.getElementById('battle-area').appendChild(fl);setTimeout(()=>fl.remove(),400);
+}
+function doAttack(){
+  const effect=equippedWeaponEffect();
+  const isBoss=curS().boss;
+  SE.attack(effect);
+  const ba=document.getElementById('battle-area');
+  const slash=document.createElement('div');slash.className='slash-wrap';
+  slash.style.cssText='right:12px;top:10px;';
+  slash.innerHTML=attackEffectSVG(effect);
+  ba.appendChild(slash);setTimeout(()=>slash.remove(),550);
+  flashBA(isBoss?'rgba(255,100,50,0.18)':'rgba(74,111,255,0.12)');
+  setTimeout(()=>{
+    document.getElementById('e-robot-wrap').classList.add('hit');
+    setTimeout(()=>document.getElementById('e-robot-wrap').classList.remove('hit'),450);
+    const dmg=gs.hintUsed?Math.max(1,gs.statAtk):(isBoss?gs.statAtk+2:gs.statAtk+1);
+    spawnParticles(ba.offsetWidth-46,36,'#fcd34d',isBoss?16:10);
+    spawnParticles(ba.offsetWidth-46,36,'#ff6b6b',isBoss?8:5);
+    const dn=document.createElement('div');dn.className='dmg-num';
+    dn.style.cssText=`right:22px;top:6px;color:#fcd34d;font-size:${isBoss?24:18}px;`;
+    dn.textContent='-'+dmg;ba.appendChild(dn);setTimeout(()=>dn.remove(),1050);
+    gs.eHp=Math.max(0,gs.eHp-dmg);updateEHp();
+    if(gs.eHp<=0){SE.defeat();setTimeout(()=>onDefeated(),300);}
+    else setMsg('「攻撃命中！'+curS().enemy+'にダメージ！」');
+  },180);
+}
+function onDefeated(){
+  gs.totalKills[gs.stageIdx]++;gs.kills=gs.totalKills[gs.stageIdx];updateKills();
+  const ni=gs.stageIdx+1;
+  const isLastStage=gs.stageIdx===9; // S10 = index 9
+  const isWorldBoss=gs.stageIdx===4; // S5 = index 4, unlocks W2
+  const ju=!isLastStage&&ni<STAGES.length&&!gs.unlocked[ni]&&gs.kills>=KILLS;
+  if(ju)gs.unlocked[ni]=true;
+  // Drop item
+  const item=curS().boss?bossDrop():rollDrop();
+  const afterDrop=()=>{
+    if(isLastStage){
+      // New Game Plus!
+      startNewGamePlus();
+    } else if(isWorldBoss&&gs.kills>=KILLS){
+      // Switch to W2
+      gs.world=2;
+      gs.stageIdx=5;gs.qIdx=0;
+      gs.eHp=STAGES[5].eHp;gs.eHpMax=STAGES[5].eHp;
+      if(!gs.unlocked[5])gs.unlocked[5]=true;
+      SE.unlock();
+      showUnlock('🌌 ワールド2解放！',()=>{
+        initStage();buildSel();
+        setMsg('「分数ワールドへようこそ！新たな試練が始まる！」');
+      });
+    } else {
+      gs.eHp=gs.eHpMax;updateEHp();
+      if(ju){SE.unlock();showUnlock(STAGES[ni].name,()=>{setMsg('「新ステージ解放！」');buildSel();});}
+      else{const rem=Math.max(0,KILLS-gs.kills);setMsg(rem>0?'「撃破！次の解放まであと'+rem+'体！」':'「撃破！次の敵が現れる…」');buildSel();}
+    }
+  };
+  if(item&&!inv.owned.includes(item.id)){inv.owned.push(item.id);saveData();showDropBanner(item,afterDrop);}
+  else{saveData();afterDrop();}
+}
+
+function startNewGamePlus(){
+  gs.ng++;
+  gs.world=1;
+  gs.stageIdx=0;gs.qIdx=0;
+  gs.kills=0;
+  gs.totalKills=[0,0,0,0,0,0,0,0,0,0];
+  // Reset unlocks but keep lv/stats/items
+  gs.unlocked=[true,false,false,false,false,false,false,false,false,false];
+  gs.pHp=gs.pHpMax; // full heal on new game
+  saveData();
+  // Show NG+ banner
+  const ban=document.createElement('div');
+  ban.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;';
+  ban.innerHTML=`<div style="background:#111528;border:2px solid #fcd34d;border-radius:16px;padding:24px 28px;text-align:center;box-shadow:0 0 40px rgba(252,211,77,0.4);">
+    <div style="font-size:28px;margin-bottom:8px;">🌟</div>
+    <div style="font-size:16px;font-weight:700;color:#fcd34d;margin-bottom:6px;">W${gs.ng} 開始！</div>
+    <div style="font-size:12px;color:#93c5fd;margin-bottom:4px;">レベル・ステータス・アイテムは引き継がれた</div>
+    <div style="font-size:11px;color:#f87171;margin-bottom:16px;">敵はさらに強くなっている！</div>
+    <button onclick="this.parentElement.parentElement.remove();initStage();buildSel();" style="padding:8px 24px;border-radius:8px;background:#4a6fff;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'Courier New',monospace;">挑戦する！</button>
+  </div>`;
+  document.body.appendChild(ban);
+  SE.levelup();
+}
+function showUnlock(name,cb){
+  const ba=document.getElementById('battle-area');
+  const bn=document.createElement('div');bn.className='unlock-banner';
+  bn.innerHTML=`<div class="unlock-inner"><div class="unlock-title">🔓 ステージ解放！</div><div class="unlock-sub">「${name}」が開放された！</div></div>`;
+  ba.appendChild(bn);setTimeout(()=>{bn.remove();if(cb)cb();},2200);
+}
+function enemyAtk(){
+  SE.damaged();
+  document.getElementById('p-robot-wrap').classList.add('hit');
+  setTimeout(()=>document.getElementById('p-robot-wrap').classList.remove('hit'),400);
+  const ba=document.getElementById('battle-area');
+  flashBA('rgba(248,113,113,0.15)');spawnParticles(46,36,'#f87171',8);
+  const dn=document.createElement('div');dn.className='dmg-num';
+  dn.style.cssText='left:24px;top:6px;color:#f87171;font-size:18px;';
+  dn.textContent='-1';ba.appendChild(dn);setTimeout(()=>dn.remove(),1050);
+  const eDmg=Math.max(1,Math.ceil(curS().eHpMax/8)-gs.statDef+(gs.lv-1));
+  gs.pHp=Math.max(0,gs.pHp-eDmg);updatePHp();
+  setMsg('「不正解！'+curS().enemy+'の反撃！'+eDmg+'ダメージ！再挑戦せよ！」');
+  if(gs.pHp<=0)setTimeout(()=>{gs.pHp=gs.pHpMax;updatePHp();setMsg('「回復した！諦めるな！」');},1200);
+}
+function gainXP(n){
+  gs.xp+=n;
+  while(gs.xp>=gs.xpMax){
+    gs.xp-=gs.xpMax;gs.lv++;gs.xpMax=Math.round(gs.xpMax*1.4);
+    gs.pendingPoints++;
+    SE.levelup();
+    setMsg('レベルアップ！ Lv.'+gs.lv+'になった！ステータスポイントを振り分けろ！');
+  }
+  updateXP();saveData();
+  if(gs.pendingPoints>0) showStatPopup();
+}
+
+function showStatPopup(){
+  if(document.getElementById('stat-popup')) return;
+  const pop=document.createElement('div');
+  pop.className='stat-popup';pop.id='stat-popup';
+  pop.innerHTML=`
+    <div class="stat-popup-title">⬆️ レベルアップ！ Lv.${gs.lv}</div>
+    <div class="stat-popup-sub">ステータスポイント: ${gs.pendingPoints}pt<br>どこに振り分ける？</div>
+    <div class="stat-btns">
+      <button class="stat-btn hp-btn" onclick="allocStat('hp')">
+        <span>❤️ HP最大値 +2</span>
+        <span class="stat-val">現在 ${gs.pHpMax}</span>
+      </button>
+      <button class="stat-btn atk-btn" onclick="allocStat('atk')">
+        <span>⚔️ 攻撃力 +1</span>
+        <span class="stat-val">現在 ${gs.statAtk}</span>
+      </button>
+      <button class="stat-btn def-btn" onclick="allocStat('def')">
+        <span>🛡️ 防御力 +1</span>
+        <span class="stat-val">現在 ${gs.statDef}</span>
+      </button>
+    </div>`;
+  document.body.appendChild(pop);
+}
+
+function allocStat(type){
+  if(gs.pendingPoints<=0) return;
+  gs.pendingPoints--;
+  if(type==='hp'){gs.pHpMax+=2;gs.pHp=Math.min(gs.pHp+2,gs.pHpMax);updatePHp();}
+  else if(type==='atk'){gs.statAtk++;}
+  else if(type==='def'){gs.statDef++;}
+  saveData();
+  const pop=document.getElementById('stat-popup');
+  if(pop)pop.remove();
+  if(gs.pendingPoints>0) setTimeout(()=>showStatPopup(),300);
+}
+function nextQ(){gs.qIdx++;setMsg('「次の問題だ！集中しろ！」');loadQ();}
+function useHint(){if(gs.answered||gs.hintUsed)return;gs.hintUsed=true;const fb=document.getElementById('fb');fb.className='fb show ok';fb.textContent='★ ヒント：'+curQ().hint;}
+function resetQ(){loadQ();setMsg('「リセット。再挑戦せよ！」');}
+function setMsg(t){document.getElementById('battle-msg').textContent=t;}
+function updateXP(){const p=Math.min(100,Math.round(gs.xp/gs.xpMax*100));document.getElementById('xp-f').style.width=p+'%';document.getElementById('xp-l').textContent='XP '+gs.xp+' / '+gs.xpMax;document.getElementById('lv-b').textContent='Lv.'+gs.lv;}
+function updateStreak(){document.getElementById('streak-b').textContent='連続 '+gs.streak;}
+function updateKills(){document.getElementById('kill-b').textContent='撃破 '+gs.kills+'/'+KILLS;document.getElementById('kill-count').textContent='撃破 '+gs.kills+' / '+KILLS;}
+function updateEHp(){const p=Math.round(gs.eHp/gs.eHpMax*100);document.getElementById('e-hp-bar').style.width=p+'%';document.getElementById('e-hp-lbl').textContent='HP '+gs.eHp+'/'+gs.eHpMax;}
+function updatePHp(){const p=Math.round(gs.pHp/gs.pHpMax*100);document.getElementById('p-hp-bar').style.width=p+'%';document.getElementById('p-hp-lbl').textContent='HP '+gs.pHp+'/'+gs.pHpMax;}
+
+// Init
+loadData();
+refreshPlayerRobot();
+if(gs.pendingPoints>0) setTimeout(()=>showStatPopup(),800);
+loadBGM();
+buildSel();
+initStage();
+</script>
+</body>
+</html>
