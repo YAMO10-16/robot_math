@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>銀河探検隊と国語の試練</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  background: #0d0f1a;
+  color: #e8eaf6;
+  min-height: 100vh;
+  padding: 1.5rem 1rem 4rem;
+}
+.wrap { max-width: 660px; margin: 0 auto; }
+
+.gb-title {
+  text-align: center;
+  padding: 1.5rem 1rem 1.25rem;
+  border-bottom: 1px solid #2a3060;
+  margin-bottom: 1.5rem;
+}
+.gb-title h1 { font-size: 22px; font-weight: 600; letter-spacing: 0.06em; color: #c8d8ff; }
+.gb-title p { font-size: 13px; color: #7888bb; margin-top: 5px; }
+
+/* Stars bg effect */
+.star-row {
+  display: flex; justify-content: center; gap: 6px;
+  margin-bottom: 1rem;
+}
+.star { width: 5px; height: 5px; border-radius: 50%; background: #4a6fff; opacity: 0.5; }
+.star:nth-child(2) { background: #ff9f43; width: 4px; height: 4px; opacity: 0.7; }
+.star:nth-child(4) { background: #a29bfe; width: 6px; height: 6px; opacity: 0.6; }
+
+/* Progress */
+.progress-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
+.progress-bar { flex: 1; height: 5px; background: #1e2240; border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #4a6fff, #a29bfe); border-radius: 3px; transition: width 0.5s ease; }
+.progress-label { font-size: 12px; color: #7888bb; white-space: nowrap; }
+
+/* Scenes */
+.scene { display: none; flex-direction: column; gap: 1.25rem; }
+.scene.active { display: flex; }
+
+.scene-header { display: flex; align-items: center; gap: 10px; }
+.scene-num {
+  font-size: 11px; font-weight: 600; color: #a29bfe;
+  background: #1a1e3a; border: 0.5px solid #2a3060;
+  border-radius: 8px; padding: 3px 11px; white-space: nowrap;
+}
+.scene-tag { font-size: 11px; font-weight: 600; padding: 3px 11px; border-radius: 8px; white-space: nowrap; }
+.tag-kanji  { background: #1e2f5e; color: #93c5fd; }
+.tag-kotowaza { background: #1a3a28; color: #6ee7b7; }
+.tag-bunpo  { background: #2e1a4a; color: #c4b5fd; }
+.tag-dokkai { background: #3a2010; color: #fcd34d; }
+
+/* Story box */
+.story-box {
+  background: #111528;
+  border-left: 3px solid #4a6fff;
+  border-radius: 0 10px 10px 0;
+  padding: 1rem 1.25rem;
+  font-size: 15px;
+  line-height: 2;
+  color: #cdd5f5;
+}
+.story-box b { color: #93c5fd; }
+
+/* Question block */
+.q-block {
+  background: #13162a;
+  border: 0.5px solid #2a3060;
+  border-radius: 12px;
+  padding: 1.25rem 1.25rem 1rem;
+}
+.q-label { font-size: 12px; font-weight: 600; color: #7888bb; margin-bottom: 8px; }
+.q-text { font-size: 15px; line-height: 1.85; color: #cdd5f5; margin-bottom: 12px; }
+
+/* Inputs */
+.ans-input {
+  width: 100%; font-size: 15px; padding: 8px 12px;
+  border: 1px solid #2a3060; border-radius: 8px;
+  background: #0d0f1a; color: #e8eaf6; outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+.ans-input:focus { border-color: #4a6fff; box-shadow: 0 0 0 2px rgba(74,111,255,0.2); }
+.ans-input.correct { border-color: #34d399; background: #052e1e; color: #6ee7b7; }
+.ans-input.wrong   { border-color: #f87171; background: #2a0a0a; color: #fca5a5; }
+
+/* Choices */
+.choices { display: flex; flex-direction: column; gap: 8px; }
+.choice-btn {
+  text-align: left; padding: 10px 14px; font-size: 14px;
+  background: #0d0f1a; border: 0.5px solid #2a3060; border-radius: 8px;
+  color: #cdd5f5; cursor: pointer; font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.choice-btn:hover:not(:disabled) { background: #1a1e3a; border-color: #4a6fff; }
+.choice-btn.correct { background: #052e1e; border-color: #34d399; color: #6ee7b7; }
+.choice-btn.wrong   { background: #2a0a0a; border-color: #f87171; color: #fca5a5; }
+.choice-btn:disabled { cursor: default; }
+
+/* Word select */
+.word-btn {
+  padding: 8px 14px; font-size: 15px;
+  border: 0.5px solid #2a3060; border-radius: 8px;
+  background: #0d0f1a; color: #cdd5f5; cursor: pointer;
+  font-family: inherit; transition: background 0.15s, border-color 0.15s;
+}
+.word-btn:hover { background: #1a1e3a; border-color: #4a6fff; }
+.word-btn.selected { background: #1e2f5e; border-color: #4a6fff; color: #93c5fd; }
+.word-btn.correct { background: #052e1e; border-color: #34d399; color: #6ee7b7; }
+.word-btn.wrong-sel { background: #2a0a0a; border-color: #f87171; color: #fca5a5; }
+
+/* Feedback */
+.feedback {
+  display: none; font-size: 14px; line-height: 1.7;
+  padding: 10px 14px; border-radius: 8px; margin-top: 10px;
+}
+.feedback.show { display: block; }
+.feedback.correct { background: #052e1e; color: #6ee7b7; border-left: 3px solid #34d399; }
+.feedback.wrong   { background: #2a0a0a; color: #fca5a5; border-left: 3px solid #f87171; }
+
+/* Buttons */
+.check-btn {
+  margin-top: 10px; padding: 8px 20px; font-size: 14px; font-weight: 600;
+  border: 0.5px solid #2a3060; border-radius: 8px;
+  background: #1a1e3a; color: #93c5fd; cursor: pointer;
+  font-family: inherit; transition: background 0.15s;
+}
+.check-btn:hover { background: #232760; }
+
+.next-btn {
+  display: none; align-self: flex-end; padding: 10px 28px;
+  font-size: 14px; font-weight: 600;
+  background: #4a6fff; color: #fff; border: none;
+  border-radius: 8px; cursor: pointer; letter-spacing: 0.03em;
+  font-family: inherit; transition: background 0.15s;
+}
+.next-btn:hover { background: #3a5fef; }
+.next-btn.show { display: inline-block; }
+
+/* Reading passage */
+.passage {
+  background: #111528;
+  border: 0.5px solid #2a3060;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  font-size: 14px;
+  line-height: 2;
+  color: #cdd5f5;
+  margin-bottom: 12px;
+}
+.passage-label { font-size: 11px; color: #7888bb; font-weight: 600; margin-bottom: 8px; letter-spacing: 0.05em; }
+
+/* Score */
+.score-screen {
+  display: none; flex-direction: column; align-items: center;
+  gap: 1.5rem; padding: 2rem 1rem; text-align: center;
+}
+.score-screen.active { display: flex; }
+.planet-icon { font-size: 56px; }
+.score-circle {
+  width: 120px; height: 120px; border-radius: 50%;
+  border: 2px solid #4a6fff;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #1a1e3a;
+}
+.score-num { font-size: 38px; font-weight: 700; color: #93c5fd; line-height: 1; }
+.score-sub { font-size: 13px; color: #7888bb; margin-top: 2px; }
+.score-msg { font-size: 16px; line-height: 1.8; color: #cdd5f5; max-width: 420px; }
+.retry-btn {
+  padding: 10px 32px; font-size: 14px; font-weight: 600;
+  background: #1a1e3a; border: 0.5px solid #2a3060;
+  border-radius: 8px; color: #93c5fd; cursor: pointer;
+  font-family: inherit; transition: background 0.15s;
+}
+.retry-btn:hover { background: #232760; }
+
+/* Rank badge */
+.rank-badge {
+  display: inline-block; padding: 4px 16px;
+  border-radius: 20px; font-size: 13px; font-weight: 600;
+  background: #1e2f5e; color: #93c5fd; border: 0.5px solid #4a6fff;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="star-row">
+    <div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div>
+    <div class="star"></div>
+  </div>
+
+  <div class="gb-title">
+    <h1>🚀 銀河探検隊と国語の試練</h1>
+    <p>小学5年生 国語ゲームブック ／ 全5問</p>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <span class="progress-label" id="prog-label">0 / 5</span>
+  </div>
+
+  <!-- ========== SCENE 1: 漢字の読み ========== -->
+  <div class="scene active" id="scene-1">
+    <div class="scene-header">
+      <span class="scene-num">ミッション 01</span>
+      <span class="scene-tag tag-kanji">漢字の読み</span>
+    </div>
+    <div class="story-box">
+      　西暦2350年。少女ヒカリは宇宙探検隊「スターシード」の新米隊員だった。<br>
+      ある日、隊長から緊急命令が届いた。<br><br>
+      「ヒカリ、未知の惑星からの信号を<b>解読</b>せよ。まず、この暗号の読み方を確認しろ。」<br><br>
+      モニターに大きな文字が浮かび上がった。
+    </div>
+    <div class="q-block">
+      <div class="q-label">問い 1 — 次の漢字の読み方をひらがなで書きなさい。</div>
+      <div style="font-size:38px; font-weight:700; letter-spacing:0.2em; text-align:center; padding:0.6rem 0; color:#93c5fd;">解読</div>
+      <input class="ans-input" id="ans1" type="text" placeholder="ひらがなで入力…" maxlength="10">
+      <button class="check-btn" onclick="check1()">📡 解読する</button>
+      <div class="feedback" id="fb1"></div>
+    </div>
+    <button class="next-btn" id="next1" onclick="goScene(2)">惑星へ出発する →</button>
+  </div>
+
+  <!-- ========== SCENE 2: ことわざ ========== -->
+  <div class="scene" id="scene-2">
+    <div class="scene-header">
+      <span class="scene-num">ミッション 02</span>
+      <span class="scene-tag tag-kotowaza">慣用句</span>
+    </div>
+    <div class="story-box">
+      　惑星に着陸したヒカリは、古代の宇宙人が残した神殿を発見した。<br>
+      入り口には、宇宙共通語で書かれた文があった。<br><br>
+      「仲間のロボットが壊れてしまい、ヒカリは<b>手も足も出なかった</b>。」<br><br>
+      　通信で隊長が問いかけてきた。「この慣用句の意味が分かるか？」
+    </div>
+    <div class="q-block">
+      <div class="q-label">問い 2 — 「手も足も出なかった」の意味として正しいものを選びなさい。</div>
+      <div class="choices" id="choices2">
+        <button class="choice-btn" onclick="checkChoice(this,false,2,'「手」と「足」を使えなかったという意味ではなく、もっと広い意味があります。')">手と足をけがして動けなかった</button>
+        <button class="choice-btn" onclick="checkChoice(this,true,2,'正解！「手も足も出ない」は、どうしようもなくて何もできない状態を表す慣用句です。')">どうにもできなくて、まったくお手上げだった</button>
+        <button class="choice-btn" onclick="checkChoice(this,false,2,'急いだという意味ではありません。もう一度考えてみよう。')">急いで走って行った</button>
+        <button class="choice-btn" onclick="checkChoice(this,false,2,'得意になったという意味ではありません。')">自分の力を思いっきり発揮した</button>
+      </div>
+      <div class="feedback" id="fb2"></div>
+    </div>
+    <button class="next-btn" id="next2" onclick="goScene(3)">神殿の奥へ進む →</button>
+  </div>
+
+  <!-- ========== SCENE 3: 文法・品詞 ========== -->
+  <div class="scene" id="scene-3">
+    <div class="scene-header">
+      <span class="scene-num">ミッション 03</span>
+      <span class="scene-tag tag-bunpo">文法・品詞</span>
+    </div>
+    <div class="story-box">
+      　神殿の奥に、古代宇宙人が残した「言葉の計算機」があった。<br>
+      計算機は起動すると、こう言った。<br><br>
+      「文の中から<b>形容詞</b>を正しく選べ。さすれば扉は開かれる。」<br><br>
+      <span style="font-size:16px; font-weight:700; color:#c4b5fd;">「広い　宇宙には　美しい　星が　かがやいて　いる。」</span>
+    </div>
+    <div class="q-block">
+      <div class="q-label">問い 3 — 上の文の中から形容詞をすべて選びなさい。（複数あります）</div>
+      <div id="word-area" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;"></div>
+      <div style="font-size:13px; color:#7888bb; margin-bottom:12px;">形容詞だと思う言葉をクリックして選んでください。</div>
+      <button class="check-btn" onclick="check3()">🔢 計算機に入力する</button>
+      <div class="feedback" id="fb3"></div>
+    </div>
+    <button class="next-btn" id="next3" onclick="goScene(4)">扉の先へ飛び込む →</button>
+  </div>
+
+  <!-- ========== SCENE 4: 漢字の書き ========== -->
+  <div class="scene" id="scene-4">
+    <div class="scene-header">
+      <span class="scene-num">ミッション 04</span>
+      <span class="scene-tag tag-kanji">漢字の書き</span>
+    </div>
+    <div class="story-box">
+      　扉の先には、地球そっくりの部屋があった。壁一面に星図が広がり、中央には光る台座があった。<br>
+      台座の文字がゆっくりと読み上げられた。<br><br>
+      「宇宙の<b>しんか</b>の歴史は、137億年におよぶ。」<br><br>
+      ヒカリは台座のキーボードで漢字を打ち込まなければならない。
+    </div>
+    <div class="q-block">
+      <div class="q-label">問い 4 — 「宇宙の（しんか）の歴史」の「しんか」を漢字で書きなさい。</div>
+      <div style="font-size:13px; color:#7888bb; margin-bottom:10px;">ヒント：生物が長い時間をかけて変化していくことを意味します。</div>
+      <input class="ans-input" id="ans4" type="text" placeholder="漢字で入力…" maxlength="5">
+      <button class="check-btn" onclick="check4()">⌨️ 台座に入力する</button>
+      <div class="feedback" id="fb4"></div>
+    </div>
+    <button class="next-btn" id="next4" onclick="goScene(5)">最終エリアへ向かう →</button>
+  </div>
+
+  <!-- ========== SCENE 5: 読解 ========== -->
+  <div class="scene" id="scene-5">
+    <div class="scene-header">
+      <span class="scene-num">ミッション 05</span>
+      <span class="scene-tag tag-dokkai">読解・文章理解</span>
+    </div>
+    <div class="story-box">
+      　ついに宇宙人の「記録室」にたどり着いた。そこには地球についての文章が刻まれていた。<br>
+      「ヒカリ、この文章をよく読んで、正確な情報を持ち帰るんだ！」と隊長の声。
+    </div>
+    <div class="q-block">
+      <div class="passage-label">【文章を読みなさい】</div>
+      <div class="passage">
+        　太陽系には八つの惑星がある。地球はその中で太陽から三番目に位置し、現在知られているかぎりでは、生命が存在する唯一の惑星だ。地球の表面の約七十パーセントは海に覆われており、この豊かな水が生命を育んできた。また、地球には月という衛星が一つあり、月の引力が地球の海に満ち引きをもたらしている。
+      </div>
+      <div class="q-label">問い 5 — この文章の内容と合っているものを一つ選びなさい。</div>
+      <div class="choices" id="choices5">
+        <button class="choice-btn" onclick="checkChoice(this,false,5,'太陽系の惑星の数を確認してみよう。文章に書いてあります。')">太陽系には十の惑星がある</button>
+        <button class="choice-btn" onclick="checkChoice(this,false,5,'地球の位置をもう一度確認しよう。「太陽から三番目」とあります。')">地球は太陽から二番目の惑星だ</button>
+        <button class="choice-btn" onclick="checkChoice(this,true,5,'正解！文章に「地球の表面の約七十パーセントは海に覆われている」とはっきり書いてあります。')">地球の表面の約七十パーセントは海だ</button>
+        <button class="choice-btn" onclick="checkChoice(this,false,5,'月の数をもう一度確認しよう。「衛星が一つ」と書いてあります。')">地球には二つの衛星がある</button>
+      </div>
+      <div class="feedback" id="fb5"></div>
+    </div>
+    <button class="next-btn" id="next5" onclick="showScore()">地球へ帰還する 🌍</button>
+  </div>
+
+  <!-- ========== SCORE SCREEN ========== -->
+  <div class="score-screen" id="score-screen">
+    <div class="planet-icon">🌌</div>
+    <div class="score-circle">
+      <div class="score-num" id="score-num">0</div>
+      <div class="score-sub">/ 5問</div>
+    </div>
+    <div class="rank-badge" id="rank-badge">探検隊員</div>
+    <div class="score-msg" id="score-msg"></div>
+    <button class="retry-btn" onclick="restart()">🔄 もう一度ミッションに挑む</button>
+  </div>
+
+</div>
+
+<script>
+let score = 0;
+let answered = [false, false, false, false, false];
+let selected3 = new Set();
+
+const words = [
+  { text: '広い',      adj: true  },
+  { text: '宇宙には',  adj: false },
+  { text: '美しい',    adj: true  },
+  { text: '星が',      adj: false },
+  { text: 'かがやいて', adj: false },
+  { text: 'いる',      adj: false },
+];
+
+function buildWords() {
+  const area = document.getElementById('word-area');
+  area.innerHTML = '';
+  selected3.clear();
+  words.forEach((w, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = w.text;
+    btn.className = 'word-btn';
+    btn.id = 'wb-' + i;
+    btn.onclick = function () {
+      if (btn.disabled) return;
+      if (selected3.has(i)) {
+        selected3.delete(i);
+        btn.className = 'word-btn';
+      } else {
+        selected3.add(i);
+        btn.className = 'word-btn selected';
+      }
+    };
+    area.appendChild(btn);
+  });
+}
+buildWords();
+
+function updateProgress(n) {
+  document.getElementById('prog').style.width = Math.round(n / 5 * 100) + '%';
+  document.getElementById('prog-label').textContent = n + ' / 5';
+}
+
+function setFb(id, ok, msg) {
+  const fb = document.getElementById(id);
+  fb.className = 'feedback show ' + (ok ? 'correct' : 'wrong');
+  fb.textContent = msg;
+}
+
+// Q1: 漢字の読み「解読」
+function check1() {
+  if (answered[0]) return;
+  const v = document.getElementById('ans1').value.trim();
+  const inp = document.getElementById('ans1');
+  if (v === 'かいどく') {
+    inp.className = 'ans-input correct';
+    setFb('fb1', true, '✅ 正解！「解読」は「かいどく」と読みます。信号の解読に成功した！');
+    score++; answered[0] = true; updateProgress(score);
+    document.getElementById('next1').className = 'next-btn show';
+  } else {
+    inp.className = 'ans-input wrong';
+    setFb('fb1', false, '❌ ちがいます。「解」と「読」それぞれの読み方を考えてみよう。');
+    setTimeout(() => { inp.className = 'ans-input'; }, 1500);
+  }
+}
+
+// Q2 / Q5: 選択肢
+function checkChoice(btn, isCorrect, sn, msg) {
+  const area = document.getElementById('choices' + sn);
+  if (area.dataset.done) return;
+  const idx = sn - 1;
+  if (isCorrect) {
+    area.dataset.done = '1';
+    area.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+    btn.className = 'choice-btn correct';
+    setFb('fb' + sn, true, '✅ ' + msg);
+    score++; answered[idx] = true; updateProgress(score);
+    document.getElementById('next' + sn).className = 'next-btn show';
+  } else {
+    btn.className = 'choice-btn wrong';
+    setFb('fb' + sn, false, '❌ ちがいます。' + msg + '　もう一度選んでみよう。');
+    setTimeout(() => {
+      btn.className = 'choice-btn';
+      document.getElementById('fb' + sn).className = 'feedback';
+    }, 2000);
+  }
+}
+
+// Q3: 形容詞選択
+function check3() {
+  if (answered[2]) return;
+  const correct = new Set([0, 2]); // 広い、美しい
+  const ok = [...correct].every(i => selected3.has(i)) && [...selected3].every(i => correct.has(i));
+  if (ok) {
+    words.forEach((_, i) => {
+      const b = document.getElementById('wb-' + i);
+      b.disabled = true;
+      if (correct.has(i)) b.className = 'word-btn correct';
+    });
+    setFb('fb3', true, '✅ 正解！「広い」と「美しい」が形容詞です。どちらも「〜い」で終わり、ものの様子を表します。扉が開いた！');
+    score++; answered[2] = true; updateProgress(score);
+    document.getElementById('next3').className = 'next-btn show';
+  } else {
+    // 間違った選択を赤く光らせてリセット
+    selected3.forEach(i => {
+      if (!correct.has(i)) document.getElementById('wb-' + i).className = 'word-btn wrong-sel';
+    });
+    setFb('fb3', false, '❌ まだ正確ではありません。形容詞は「〜い」で終わる、様子を表す言葉です。選び直してみよう。');
+    setTimeout(() => {
+      words.forEach((_, i) => { document.getElementById('wb-' + i).className = 'word-btn'; });
+      selected3.clear();
+      document.getElementById('fb3').className = 'feedback';
+    }, 2000);
+  }
+}
+
+// Q4: 漢字の書き「進化」
+function check4() {
+  if (answered[3]) return;
+  const v = document.getElementById('ans4').value.trim();
+  const inp = document.getElementById('ans4');
+  if (v === '進化') {
+    inp.className = 'ans-input correct';
+    setFb('fb4', true, '✅ 正解！「進化」— 台座が光り、新たな扉が現れた！');
+    score++; answered[3] = true; updateProgress(score);
+    document.getElementById('next4').className = 'next-btn show';
+  } else {
+    inp.className = 'ans-input wrong';
+    setFb('fb4', false, '❌ ちがいます。生物が変化して「すすむ」イメージの二字熟語を考えてみよう。');
+    setTimeout(() => { inp.className = 'ans-input'; }, 1500);
+  }
+}
+
+function goScene(n) {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  document.getElementById('scene-' + n).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showScore() {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  const ss = document.getElementById('score-screen');
+  ss.style.display = 'flex'; ss.classList.add('active');
+  document.getElementById('score-num').textContent = score;
+  const ranks = ['見習い隊員', '銀河探検士', '銀河探検士', '星間ナビゲーター', '星間ナビゲーター', '伝説の宇宙探検家'];
+  const msgs = [
+    '地球に帰還したが、まだ修行が必要だ。もう一度ミッションに挑もう！',
+    'よくがんばった！いくつかの試練はクリアできた。残りの問題も攻略しよう。',
+    '半分以上クリア！宇宙の知識と国語力が育ってきている。もう少しだ！',
+    'すごい！あと少しで満点。次のミッションではさらに上を目指せ！',
+    '4問正解！ほぼ完璧。あと1問を狙ってみよう！',
+    '🎉 全問正解！ヒカリは伝説の宇宙探検家として銀河に名を残した！'
+  ];
+  document.getElementById('rank-badge').textContent = ranks[score];
+  document.getElementById('score-msg').textContent = msgs[score];
+  updateProgress(score);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function restart() {
+  score = 0;
+  answered = [false, false, false, false, false];
+  ['ans1', 'ans4'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = ''; el.className = 'ans-input';
+  });
+  [1, 2, 3, 4, 5].forEach(n => {
+    document.getElementById('fb' + n).className = 'feedback';
+    document.getElementById('next' + n).className = 'next-btn';
+  });
+  [2, 5].forEach(n => {
+    const area = document.getElementById('choices' + n);
+    area.removeAttribute('data-done');
+    area.querySelectorAll('.choice-btn').forEach(b => { b.disabled = false; b.className = 'choice-btn'; });
+  });
+  buildWords();
+  updateProgress(0);
+  document.getElementById('score-screen').classList.remove('active');
+  document.getElementById('score-screen').style.display = 'none';
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  document.getElementById('scene-1').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

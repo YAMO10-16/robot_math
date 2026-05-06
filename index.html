@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🚀 学習ゲームランチャー</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  background: #07080f;
+  color: #e8eaf6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem 4rem;
+}
+
+/* Stars */
+.stars {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; overflow: hidden; z-index: 0;
+}
+.star {
+  position: absolute; border-radius: 50%;
+  background: #ffffff; animation: twinkle var(--d,3s) ease-in-out infinite;
+}
+@keyframes twinkle {
+  0%,100%{ opacity: var(--lo,.2); } 50%{ opacity: var(--hi,.8); }
+}
+
+.wrap { position: relative; z-index: 1; width: 100%; max-width: 560px; }
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 2rem 1rem 1.5rem;
+}
+.header-rocket { font-size: 48px; display: block; margin-bottom: 0.5rem; }
+.header h1 {
+  font-size: 22px; font-weight: 700;
+  background: linear-gradient(90deg, #93c5fd, #c4b5fd, #6ee7b7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: 0.06em;
+}
+.header p { font-size: 13px; color: #5a6a9a; margin-top: 6px; }
+
+/* Cards */
+.game-list { display: flex; flex-direction: column; gap: 14px; margin-top: 1rem; }
+
+.game-card {
+  display: block; text-decoration: none;
+  background: #0d1020;
+  border: 0.5px solid #1e2448;
+  border-radius: 16px;
+  padding: 1.2rem 1.25rem;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.game-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 60%, rgba(255,255,255,0.02));
+  pointer-events: none;
+}
+.game-card:hover, .game-card:active {
+  transform: translateY(-2px);
+  border-color: var(--accent, #4a6fff);
+  box-shadow: 0 4px 24px rgba(74,111,255,0.15);
+}
+
+.game-card-inner { display: flex; align-items: center; gap: 14px; }
+.game-icon {
+  font-size: 40px; line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px var(--glow, #4a6fff));
+}
+.game-info { flex: 1; min-width: 0; }
+.game-title {
+  font-size: 17px; font-weight: 700; color: #e8eaf6;
+  margin-bottom: 4px;
+}
+.game-sub {
+  font-size: 12px; color: #5a6a8a; margin-bottom: 8px;
+}
+.game-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag {
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 6px; border: 0.5px solid currentColor;
+}
+
+.game-arrow {
+  font-size: 18px; color: var(--accent,#4a6fff);
+  flex-shrink: 0; opacity: 0.7;
+}
+
+/* Card themes */
+.card-math   { --accent:#4a6fff; --glow:#4a6fff; }
+.card-sci    { --accent:#34d399; --glow:#34d399; }
+.card-kokugo { --accent:#f59e0b; --glow:#f59e0b; }
+
+/* Footer */
+.footer {
+  margin-top: 2.5rem; text-align: center;
+  font-size: 11px; color: #2a3050;
+}
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="wrap">
+  <div class="header">
+    <span class="header-rocket">🚀</span>
+    <h1>学習ゲームランチャー</h1>
+    <p>ゲームを選んでミッション開始！</p>
+  </div>
+
+  <div class="game-list">
+
+    <!-- 理科RPG -->
+    <a class="game-card card-sci" href="science_rpg.html">
+      <div class="game-card-inner">
+        <div class="game-icon" style="--glow:#34d399">⚗️</div>
+        <div class="game-info">
+          <div class="game-title">理科 冒険RPG</div>
+          <div class="game-sub">銀河の果てで自然の謎を解き明かせ！</div>
+          <div class="game-tags">
+            <span class="tag" style="color:#34d399;border-color:#34d399">小5理科</span>
+            <span class="tag" style="color:#6ee7b7;border-color:#6ee7b7">全10ステージ</span>
+            <span class="tag" style="color:#a7f3d0;border-color:#a7f3d0">装備・レベルアップ</span>
+          </div>
+        </div>
+        <div class="game-arrow" style="color:#34d399">▶</div>
+      </div>
+    </a>
+
+    <!-- 算数RPG -->
+    <a class="game-card card-math" href="robot_rpg_phase5.html">
+      <div class="game-card-inner">
+        <div class="game-icon" style="--glow:#4a6fff">🤖</div>
+        <div class="game-info">
+          <div class="game-title">算数 ロボットバトル</div>
+          <div class="game-sub">ロボットを率いて算数の敵を倒せ！</div>
+          <div class="game-tags">
+            <span class="tag" style="color:#93c5fd;border-color:#93c5fd">小学算数</span>
+            <span class="tag" style="color:#bfdbfe;border-color:#bfdbfe">W1・W2</span>
+            <span class="tag" style="color:#dbeafe;border-color:#dbeafe">ニューゲーム+</span>
+          </div>
+        </div>
+        <div class="game-arrow" style="color:#4a6fff">▶</div>
+      </div>
+    </a>
+
+    <!-- 国語ゲームブック -->
+    <a class="game-card card-kokugo" href="kokugo_gamebook_space.html">
+      <div class="game-card-inner">
+        <div class="game-icon" style="--glow:#f59e0b">📖</div>
+        <div class="game-info">
+          <div class="game-title">国語 銀河ゲームブック</div>
+          <div class="game-sub">宇宙を旅しながら言葉の謎を解け！</div>
+          <div class="game-tags">
+            <span class="tag" style="color:#fcd34d;border-color:#fcd34d">小5国語</span>
+            <span class="tag" style="color:#fde68a;border-color:#fde68a">全5問</span>
+            <span class="tag" style="color:#fef3c7;border-color:#fef3c7">漢字・読解・文法</span>
+          </div>
+        </div>
+        <div class="game-arrow" style="color:#f59e0b">▶</div>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="footer">© 学習ゲームランチャー — iPadでも快適にプレイできます</div>
+</div>
+
+<script>
+// Generate random stars
+const container = document.getElementById('stars');
+for (let i = 0; i < 80; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const size = Math.random() * 2.5 + 0.5;
+  s.style.cssText = [
+    `width:${size}px`, `height:${size}px`,
+    `top:${Math.random()*100}%`, `left:${Math.random()*100}%`,
+    `--d:${(Math.random()*4+2).toFixed(1)}s`,
+    `--lo:${(Math.random()*0.15+0.05).toFixed(2)}`,
+    `--hi:${(Math.random()*0.5+0.4).toFixed(2)}`,
+    `animation-delay:${(Math.random()*5).toFixed(1)}s`
+  ].join(';');
+  container.appendChild(s);
+}
+</script>
+</body>
+</html>
