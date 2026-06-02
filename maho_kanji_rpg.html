@@ -142,7 +142,7 @@ body{font-family:'Hiragino Mincho ProN','Yu Mincho',serif;background:#0a0612;min
 .battle-msg{margin:0 7px 4px;background:rgba(6,3,16,0.88);border-radius:9px;padding:6px 11px;font-size:13px;color:#c0a0e0;min-height:26px;border-left:3px solid #8040c0;line-height:1.55;}
 
 /* Q AREA */
-.q-area{margin:0 7px 4px;background:rgba(6,3,16,0.88);border:1px solid #2a1850;border-radius:12px;padding:9px 11px;}
+.q-area{margin:0 7px 4px;background:rgba(6,3,16,0.88);border:1px solid #2a1850;border-radius:12px;padding:9px 11px;-webkit-user-select:none;user-select:none;}
 .q-lbl{font-size:11px;color:#a080c0;margin-bottom:3px;letter-spacing:0.07em;font-weight:700;}
 .q-type-badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;margin-bottom:5px;font-weight:700;}
 .q-type-kanji{background:#1a0c38;color:#c080f0;}
@@ -161,7 +161,8 @@ input[type=range].pen-r{width:55px;accent-color:#8040c0;vertical-align:middle;}
 .cdots{display:flex;gap:3px;}
 .cdot{width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color 0.12s;flex-shrink:0;}
 .cdot.active{border-color:#fff;}
-.kanji-canvas{display:block;width:100%;height:190px;background:#06020e;border:2px solid #3a2060;border-radius:11px;cursor:crosshair;touch-action:none;}
+.kanji-canvas{display:block;width:100%;height:190px;background:#06020e;border:2px solid #3a2060;border-radius:11px;cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+#canvas-wrap{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
 .canvas-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;color:#2a1840;pointer-events:none;font-family:'Hiragino Mincho ProN','Yu Mincho',serif;user-select:none;transition:opacity 0.3s;}
 
 /* Text input alt */
@@ -314,7 +315,7 @@ input[type=range].pen-r{width:55px;accent-color:#8040c0;vertical-align:middle;}
         <div class="cdots" id="cdots"></div>
         <button class="ctrl-btn active" id="mode-btn" onclick="toggleMode()">⌨️切替</button>
       </div>
-      <div style="position:relative;" id="canvas-wrap">
+      <div style="position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;" id="canvas-wrap">
         <canvas class="kanji-canvas" id="kanji-canvas"></canvas>
         <div class="canvas-hint" id="canvas-hint">書け</div>
       </div>
@@ -460,6 +461,12 @@ function initCanvas(){
   cv.addEventListener('pointerdown',pdDown,{passive:false});
   cv.addEventListener('pointermove',pdMove,{passive:false});
   cv.addEventListener('pointerup',pdUp);cv.addEventListener('pointercancel',pdUp);
+  // iOS Safari: 長押し・ドラッグによる選択メニューを完全ブロック
+  cv.addEventListener('contextmenu',e=>e.preventDefault());
+  cv.addEventListener('selectstart',e=>e.preventDefault());
+  cv.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+  cv.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  cv.addEventListener('touchend',e=>e.preventDefault(),{passive:false});
 }
 function drawGuide(ctx,w,h){
   ctx.strokeStyle='rgba(80,40,120,0.22)';ctx.lineWidth=0.5;
@@ -476,7 +483,12 @@ function getP(e){
   const r=cv.getBoundingClientRect();
   return {x:(e.clientX-r.left)*(cv.width/r.width),y:(e.clientY-r.top)*(cv.height/r.height)};
 }
-function pdDown(e){e.preventDefault();drawing=true;const p=getP(e);lastX=p.x;lastY=p.y;canvasHas=true;document.getElementById('canvas-hint').style.opacity='0';}
+function pdDown(e){
+  e.preventDefault();
+  try{e.target.setPointerCapture(e.pointerId);}catch(_){}
+  drawing=true;const p=getP(e);lastX=p.x;lastY=p.y;canvasHas=true;
+  document.getElementById('canvas-hint').style.opacity='0';
+}
 function pdMove(e){
   e.preventDefault();if(!drawing)return;
   const cv=document.getElementById('kanji-canvas');const ctx=cv.getContext('2d');
