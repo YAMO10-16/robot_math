@@ -174,13 +174,15 @@ input[type=range].pen-r{width:55px;accent-color:#8040c0;vertical-align:middle;}
 .sub-btn:hover{background:#180a30;}
 .sub-btn:disabled{opacity:0.35;cursor:default;}
 
-/* Voice */
-.voice-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
-.voice-btn{flex:1;padding:9px 0;border-radius:10px;font-size:13px;font-weight:700;border:1px solid #3a2060;background:#100820;color:#c080f0;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.2s;}
-.voice-btn:hover{border-color:#8040c0;}
-.voice-btn.listening{background:#280640;border-color:#c080f0;animation:pulseV 1.1s ease infinite;}
-@keyframes pulseV{0%,100%{box-shadow:0 0 0 0 rgba(192,128,240,0.4);}50%{box-shadow:0 0 0 8px rgba(192,128,240,0);}}
-.voice-status{font-size:11px;color:#6a5888;text-align:center;min-height:15px;margin-bottom:2px;}
+/* Judge buttons */
+.judge-row{display:flex;gap:8px;margin-bottom:6px;}
+.judge-btn{flex:1;padding:11px 0;border-radius:10px;font-size:14px;font-weight:700;border:1px solid;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.18s;letter-spacing:0.03em;}
+.judge-btn.ok{background:#042018;border-color:#40c080;color:#80e0b0;}
+.judge-btn.ok:hover{background:#063022;border-color:#60e0a0;}
+.judge-btn.ng{background:#160208;border-color:#c04050;color:#f08090;}
+.judge-btn.ng:hover{background:#220410;border-color:#e06070;}
+.judge-btn:disabled{opacity:0.35;cursor:default;}
+.answer-hint{font-size:12px;color:#6a5888;text-align:center;min-height:15px;margin-bottom:4px;letter-spacing:0.04em;}
 .answer-reveal{font-size:20px;color:#f0c040;margin:4px 0;display:none;}
 .answer-reveal.show{display:block;}
 .fb{font-size:13px;padding:5px 9px;border-radius:8px;margin-top:4px;display:none;line-height:1.55;}
@@ -324,11 +326,11 @@ input[type=range].pen-r{width:55px;accent-color:#8040c0;vertical-align:middle;}
       <div class="answer-reveal" id="answer-reveal"></div>
       <div class="fb" id="fb"></div>
 
-      <div class="voice-row" id="voice-row">
-        <button class="voice-btn" id="voice-btn" onclick="startVoice()">🎤 読みを唱えて攻撃！</button>
-        <button class="sub-btn" id="self-judge-btn" onclick="selfJudge()" style="white-space:nowrap;font-size:11px;padding:9px 10px;">✅ 書けた！</button>
+      <div class="answer-hint" id="answer-hint">✏️ 書き終わったら答え合わせ</div>
+      <div class="judge-row" id="judge-row">
+        <button class="judge-btn ok" id="judge-ok" onclick="selfJudgeResult(true)">⭕ 書けた！</button>
+        <button class="judge-btn ng" id="judge-ng" onclick="selfJudgeResult(false)">❌ 書けなかった</button>
       </div>
-      <div class="voice-status" id="voice-status">🎤 読みを声に出す、または「書けた！」で自己判定</div>
     </div>
 
     <div class="btns-row">
@@ -498,95 +500,21 @@ function clearCanvas(){
 function toggleMode(){
   const cw=document.getElementById('canvas-wrap');
   const tr=document.getElementById('text-row');
-  const vr=document.getElementById('voice-row');
   const mb=document.getElementById('mode-btn');
   if(inputMode==='canvas'){
-    inputMode='text';cw.style.display='none';tr.style.display='flex';vr.style.display='none';
+    inputMode='text';cw.style.display='none';tr.style.display='flex';
     mb.textContent='🖊️手書きへ';mb.classList.add('active');
   } else {
-    inputMode='canvas';cw.style.display='';tr.style.display='none';vr.style.display='flex';
+    inputMode='canvas';cw.style.display='';tr.style.display='none';
     mb.textContent='⌨️切替';mb.classList.remove('active');
   }
 }
 
-// ===== VOICE =====
-let SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let recog=null,voiceOn=false;
-function initVoice(){
-  if(!SR){document.getElementById('voice-status').textContent='⚠️ 音声入力非対応（Safari/Chrome推奨）';return;}
-  recog=new SR();recog.lang='ja-JP';recog.continuous=false;recog.interimResults=false;
-  recog.onresult=ev=>{
-    const txt=ev.results[0][0].transcript.trim();
-    const conf=Math.round((ev.results[0][0].confidence||0)*100);
-    document.getElementById('voice-status').textContent='聞こえた：「'+txt+'」'+(conf?'（確度'+conf+'%）':'');
-    stopVoice();handleVoiceAns(txt);
-  };
-  recog.onerror=ev=>{document.getElementById('voice-status').textContent='エラー:'+ev.error;stopVoice();};
-  recog.onend=()=>stopVoice();
-}
-function startVoice(){
-  if(gs.answered)return;
-  if(!recog){document.getElementById('voice-status').textContent='⚠️非対応';return;}
-  if(voiceOn){stopVoice();return;}
-  voiceOn=true;
-  const b=document.getElementById('voice-btn');b.className='voice-btn listening';b.textContent='🔴 聴いています…';
-  document.getElementById('voice-status').textContent='✨ 読みを声に出してください…';
-  try{recog.start();}catch(e){stopVoice();}
-}
-function stopVoice(){
-  voiceOn=false;
-  const b=document.getElementById('voice-btn');b.className='voice-btn';b.textContent='🎤 読みを唱えて攻撃！';
-  try{recog.stop();}catch(e){}
-}
-function handleVoiceAns(spoken){
-  if(gs.answered)return;
-  const q=getCurQ();if(!q)return;
-  const reading=getReading(q);
-  const ok=matchR(spoken,reading);
-  doHandleAnswer(ok,spoken,q);
-}
+// ===== SELF JUDGE =====
 function getReading(q){
   const m=(q.q||'').match(/ひらがなで「([^」]+)」/);
   if(m)return m[1];
-  // For compound/idiom questions, reading is in q.reading field
   return q.reading||'';
-}
-function matchR(spoken,reading){
-  if(!reading)return false;
-  // Step1: normalize both → hiragana lowercase, strip spaces/punctuation
-  const norm=s=>s
-    .replace(/\s/g,'')
-    .replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
-    .replace(/[・。、？！「」『』【】〜ー～]/g,'')
-    .replace(/[a-zA-Z]/g,c=>c.toLowerCase())
-    .toLowerCase();
-
-  // Step2: also strip all kanji/non-kana from spoken (browser sometimes returns mixed)
-  const kanaOnly=s=>norm(s).replace(/[^\u3041-\u3096a-z0-9]/g,'');
-
-  const s=norm(spoken), r=norm(reading);
-  const sk=kanaOnly(spoken), rk=kanaOnly(reading);
-
-  // Exact / contains match
-  if(s===r||s.includes(r)||r.includes(s))return true;
-  if(sk&&rk&&(sk===rk||sk.includes(rk)||rk.includes(sk)))return true;
-
-  // Step3: edit-distance tolerance (allow ~30% error)
-  function editDist(a,b){
-    const dp=Array.from({length:a.length+1},(_,i)=>[i,...Array(b.length).fill(0)]);
-    for(let j=0;j<=b.length;j++)dp[0][j]=j;
-    for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)
-      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-    return dp[a.length][b.length];
-  }
-  const target=rk||r;
-  const input=sk||s;
-  if(!target||!input)return false;
-  const dist=editDist(input,target);
-  const maxLen=Math.max(input.length,target.length);
-  // Allow up to 40% error for longer words, 1 error for short
-  const threshold=maxLen<=3?1:Math.ceil(maxLen*0.4);
-  return dist<=threshold;
 }
 function submitText(){
   if(gs.answered)return;
@@ -595,27 +523,21 @@ function submitText(){
   const ok=(v===q.answer);
   doHandleAnswer(ok,v,q);
 }
-
-// Self-judge: player decides if their handwritten answer is correct
-function selfJudge(){
+function selfJudgeResult(ok){
   if(gs.answered)return;
   const q=getCurQ();if(!q)return;
+  // 正解を表示してから判定
   const reading=getReading(q);
-  // Show the answer for player to compare, then offer Yes/No
   const rev=document.getElementById('answer-reveal');
   rev.textContent='正解：'+q.answer+(reading?'（'+reading+'）':'');
   rev.className='answer-reveal show';
-  // Replace voice area with yes/no buttons
-  const vr=document.getElementById('voice-row');
-  vr.innerHTML=`
-    <button class="voice-btn" style="background:#042018;border-color:#40c080;color:#80e0b0;" onclick="selfJudgeResult(true)">⭕ 書けた！正解</button>
-    <button class="voice-btn" style="background:#160208;border-color:#c04050;color:#f08090;" onclick="selfJudgeResult(false)">❌ 書けなかった</button>`;
-  document.getElementById('voice-status').textContent='自分の答えと正解を見比べてください';
-}
-function selfJudgeResult(ok){
-  const q=getCurQ();if(!q||gs.answered)return;
-  doHandleAnswer(ok,ok?q.answer:'（自己判定）不正解',q);
-  // Restore voice row for next question
+  // ボタンを無効化
+  const jok=document.getElementById('judge-ok');
+  const jng=document.getElementById('judge-ng');
+  if(jok)jok.disabled=true;
+  if(jng)jng.disabled=true;
+  document.getElementById('answer-hint').textContent='';
+  doHandleAnswer(ok, ok?q.answer:'（書けなかった）', q);
 }
 
 // ===== WEAPONS & ITEMS =====
@@ -1344,7 +1266,7 @@ function initStage(){
   document.getElementById('kanji-inp').className='kanji-inp';
   document.getElementById('answer-reveal').className='answer-reveal';
   document.getElementById('fb').className='fb';
-  document.getElementById('voice-status').textContent='🎤 を押して読みを声に出すと魔法発動';
+  document.getElementById('answer-hint').textContent='✏️ 書き終わったら答え合わせ';
   playBGMForStage();
 }
 
@@ -1366,8 +1288,9 @@ function loadQ(){
   document.getElementById('fb').className='fb';
   document.getElementById('answer-reveal').className='answer-reveal';
   document.getElementById('next-btn').disabled=true;
-  document.getElementById('voice-status').textContent='🎤 を押して読みを声に出すと魔法発動';
-  document.getElementById('voice-btn').className='voice-btn';document.getElementById('voice-btn').textContent='🎤 読みを唱えて攻撃！';
+  document.getElementById('answer-hint').textContent='✏️ 書き終わったら答え合わせ';
+  const jok=document.getElementById('judge-ok');const jng=document.getElementById('judge-ng');
+  if(jok)jok.disabled=false;if(jng)jng.disabled=false;
   document.getElementById('kanji-inp').value='';document.getElementById('kanji-inp').className='kanji-inp';
   document.getElementById('sub-btn-t').disabled=false;
   document.getElementById('kill-count').textContent='討伐 '+gs.kills+'/'+(st.killsNeeded||KILLS_NORMAL);
@@ -1402,7 +1325,7 @@ function drawCanvasGuideChar(q){
 
 // ===== ANSWER =====
 function doHandleAnswer(ok,userAns,q){
-  if(gs.answered)return;gs.answered=true;stopVoice();
+  if(gs.answered)return;gs.answered=true;
   const inp=document.getElementById('kanji-inp');
   const fb=document.getElementById('fb');
   const rev=document.getElementById('answer-reveal');
@@ -1768,7 +1691,7 @@ function equipItem(id){
 // ===== INIT =====
 loadData();recalcHpMax();updateHeroSVG();buildWeaponBtns();updateXP();updateStreak();updatePHp();
 if(gs.pendingPoints>0)setTimeout(()=>showStatPopup(),800);
-initCanvas();initVoice();loadStages();
+initCanvas();loadStages();
 // スプライト初期表示
 setTimeout(()=>updateHeroSprite('idle'),100);
 document.getElementById('kanji-inp').addEventListener('keydown',e=>{if(e.key==='Enter')submitText();});
