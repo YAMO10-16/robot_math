@@ -1,0 +1,552 @@
+{
+  "meta": {
+    "title": "怪盗ヴィント ～シンギュラリンゴを追え～",
+    "subtitle": "小5算数・途中式ゲームブック",
+    "version": "0.1",
+    "hp": 3,
+    "goal": "ブラックホール最奥のシンギュラリンゴを手に入れる",
+    "wrongOutcome": "damage",
+    "notes": "correct=true の選択で next（step/clear）へ進む。誤答は next=damage：HP-1、feedback と hint を表示し、同じステップで再挑戦。 背景は dungeon.bg（単元単位）。correct選択肢の log を画面の途中式に追記。"
+  },
+  "assets": {
+    "bgmDir": "bgm/",
+    "seDir": "se/",
+    "imgDir": "img/",
+    "bgm": {
+      "title": "Title.mp3",
+      "dungeon": "Dungeon.mp3",
+      "dark": "Dark_Dungeon.mp3",
+      "last": "Last_Dangeoun.mp3",
+      "ending": "Ending.mp3"
+    },
+    "se": {
+      "correct": "correct.mp3",
+      "wrong": "wrong.mp3",
+      "door": "door.mp3",
+      "item": "item.mp3"
+    },
+    "bg": {
+      "stage1_ship": "stage1_ship.jpg",
+      "stage2_cockpit": "stage2_cockpit.jpg",
+      "stage3_blackhole": "stage3_blackhole.jpg",
+      "ending": "ending.jpg"
+    },
+    "characters": {
+      "vint": {
+        "normal": "vint_normal.png",
+        "ok": "vint_ok.png",
+        "damage": "vint_damage.png"
+      },
+      "gatt": {
+        "normal": "gatt_normal.png",
+        "happy": "gatt_happy.png",
+        "surprise": "gatt_surprise.png"
+      }
+    }
+  },
+  "lineup": [
+    {
+      "order": 1,
+      "unit": "分数の計算（約分・通分）",
+      "id": "D1",
+      "status": "authored"
+    },
+    {
+      "order": 2,
+      "unit": "逆算（還元算）",
+      "id": "D2",
+      "status": "authored"
+    },
+    {
+      "order": 3,
+      "unit": "割合",
+      "status": "planned"
+    },
+    {
+      "order": 4,
+      "unit": "比",
+      "status": "planned"
+    },
+    {
+      "order": 5,
+      "unit": "平均・つるかめ算",
+      "status": "planned"
+    },
+    {
+      "order": 6,
+      "unit": "速さ",
+      "status": "planned"
+    },
+    {
+      "order": 7,
+      "unit": "倍数・約数",
+      "status": "planned"
+    },
+    {
+      "order": 8,
+      "unit": "場合の数",
+      "status": "planned"
+    }
+  ],
+  "dungeons": [
+    {
+      "id": "D1",
+      "unit": "分数の計算（約分・通分）",
+      "theme": "分数の封印",
+      "bgm": "dungeon",
+      "reward": "laser_sword1",
+      "stages": [
+        {
+          "stage": 1,
+          "enemy": "automaton",
+          "problem": "12/18 を、いちばん簡単な分数にしなさい。",
+          "answer": "2/3",
+          "intro": "侵食されたコックピットの扉に、分数の封印が光る。「約分しろってか。お安いご用さ」とヴィント。「口より手を動かすミャ。約分は“最後まで”割り切るのが鉄則ミャ」",
+          "clear": "隔壁がスライドして道が開いた。「次いこうぜ相棒」「調子に乗らないでミャ」",
+          "steps": [
+            {
+              "id": "step1",
+              "prompt": "分子と分母を、何で割る？",
+              "choices": [
+                {
+                  "text": "6 でわる",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解。12と18の最大公約数は6。一気に割り切るのが粋ってもんさ。",
+                  "hint": "",
+                  "next": "step2",
+                  "log": "12 と 18 を 6 でわる"
+                },
+                {
+                  "text": "2 でわる",
+                  "correct": false,
+                  "mistake": "約分不足",
+                  "feedback": "6/9 になるけど、まだ割れるミャ。約分は最後までやり切るミャ。",
+                  "hint": "もっと大きい数で割れないか探すミャ",
+                  "next": "damage"
+                },
+                {
+                  "text": "3 でわる",
+                  "correct": false,
+                  "mistake": "約分不足",
+                  "feedback": "4/6 になるけど、まだ割れるミャ。途中で止めちゃダメミャ。",
+                  "hint": "2でも3でも割れる数は？",
+                  "next": "damage"
+                },
+                {
+                  "text": "5 でわる",
+                  "correct": false,
+                  "mistake": "計算ミス",
+                  "feedback": "12も18も5では割り切れないミャ。公約数を選ぶミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            },
+            {
+              "id": "step2",
+              "prompt": "12÷6 と 18÷6 を計算すると？",
+              "choices": [
+                {
+                  "text": "2/3",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解！2/3。封印が解けたぜ。",
+                  "hint": "",
+                  "next": "clear",
+                  "log": "12÷6＝2 ／ 18÷6＝3 → 2/3"
+                },
+                {
+                  "text": "2/6",
+                  "correct": false,
+                  "mistake": "計算ミス",
+                  "feedback": "分母も6で割るミャ。18÷6=3ミャ。",
+                  "hint": "",
+                  "next": "damage"
+                },
+                {
+                  "text": "6/9",
+                  "correct": false,
+                  "mistake": "約分不足",
+                  "feedback": "それは2で割った形ミャ。6で割れば一発ミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "stage": 2,
+          "enemy": "slime",
+          "problem": "1/2 + 1/3 を計算しなさい。",
+          "answer": "5/6",
+          "intro": "ツタとキノコに侵食されたコックピット。床のパネルに足し算の式が光る。「分母がそろってねえな」とヴィント。「通分してそろえるミャ。分子だけ足すのは厳禁ミャ」",
+          "clear": "パネルが沈み、奥への道ができた。",
+          "steps": [
+            {
+              "id": "step1",
+              "prompt": "分母を、いくつにそろえる？",
+              "choices": [
+                {
+                  "text": "6",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解。2と3の最小公倍数は6。",
+                  "hint": "",
+                  "next": "step2",
+                  "log": "分母を 6 にそろえる"
+                },
+                {
+                  "text": "5",
+                  "correct": false,
+                  "mistake": "通分ミス",
+                  "feedback": "分母どうしを足しちゃダメミャ。そろえるのは最小公倍数ミャ。",
+                  "hint": "2と3の両方で割り切れる数は？",
+                  "next": "damage"
+                },
+                {
+                  "text": "2 か 3 のまま",
+                  "correct": false,
+                  "mistake": "通分ミス",
+                  "feedback": "そろえないと足せないミャ。通分するミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            },
+            {
+              "id": "step2",
+              "prompt": "6にそろえると、1/2 と 1/3 は？",
+              "choices": [
+                {
+                  "text": "3/6 と 2/6",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解。分母を何倍かしたら、分子も同じだけ増やす。",
+                  "hint": "",
+                  "next": "step3",
+                  "log": "1/2＝3/6 ／ 1/3＝2/6"
+                },
+                {
+                  "text": "1/6 と 1/6",
+                  "correct": false,
+                  "mistake": "通分ミス",
+                  "feedback": "分子をそのままにしちゃダメミャ。1/2=3/6 ミャ。",
+                  "hint": "分母を3倍したら分子も3倍ミャ",
+                  "next": "damage"
+                }
+              ]
+            },
+            {
+              "id": "step3",
+              "prompt": "3/6 + 2/6 は？",
+              "choices": [
+                {
+                  "text": "5/6",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解！5/6。きれいに決まったな。",
+                  "hint": "",
+                  "next": "clear",
+                  "log": "3/6＋2/6＝5/6"
+                },
+                {
+                  "text": "5/12",
+                  "correct": false,
+                  "mistake": "計算ミス",
+                  "feedback": "分母は足さないミャ。6のままミャ。",
+                  "hint": "",
+                  "next": "damage"
+                },
+                {
+                  "text": "6/6",
+                  "correct": false,
+                  "mistake": "計算ミス",
+                  "feedback": "分子は 3+2=5 ミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "stage": 3,
+          "enemy": "space_worm",
+          "problem": "3/4 − 1/6 を計算しなさい。",
+          "answer": "7/12",
+          "intro": "コックピット最奥の端末に、最後の封印。今度は引き算だ。「ラストか。決めてやるよ」「ここで分母を引いたら笑うミャ」",
+          "clear": "最後の封印が砕けた。装備をひとつ手に入れた！",
+          "steps": [
+            {
+              "id": "step1",
+              "prompt": "分母を、いくつにそろえる？（最小で）",
+              "choices": [
+                {
+                  "text": "12",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解。4と6の最小公倍数は12。",
+                  "hint": "",
+                  "next": "step2",
+                  "log": "分母を 12 にそろえる"
+                },
+                {
+                  "text": "24",
+                  "correct": false,
+                  "mistake": "通分ミス",
+                  "feedback": "24でも計算はできるけど、最小は12ミャ。",
+                  "hint": "4と6の最小公倍数を探すミャ",
+                  "next": "damage"
+                },
+                {
+                  "text": "10",
+                  "correct": false,
+                  "mistake": "通分ミス",
+                  "feedback": "分母どうしを足しちゃダメミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            },
+            {
+              "id": "step2",
+              "prompt": "12にそろえると、3/4 と 1/6 は？",
+              "choices": [
+                {
+                  "text": "9/12 と 2/12",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解。3/4=9/12、1/6=2/12。",
+                  "hint": "",
+                  "next": "step3",
+                  "log": "3/4＝9/12 ／ 1/6＝2/12"
+                },
+                {
+                  "text": "3/12 と 1/12",
+                  "correct": false,
+                  "mistake": "通分ミス",
+                  "feedback": "分子もそろえて増やすミャ。3/4=9/12 ミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            },
+            {
+              "id": "step3",
+              "prompt": "9/12 − 2/12 は？",
+              "choices": [
+                {
+                  "text": "7/12",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解！7/12。封印、全部解除だ！",
+                  "hint": "",
+                  "next": "clear",
+                  "log": "9/12－2/12＝7/12"
+                },
+                {
+                  "text": "7/24",
+                  "correct": false,
+                  "mistake": "計算ミス",
+                  "feedback": "分母は引かないミャ。12のままミャ。",
+                  "hint": "",
+                  "next": "damage"
+                },
+                {
+                  "text": "11/12",
+                  "correct": false,
+                  "mistake": "演算ミス",
+                  "feedback": "引き算ミャ。9−2=7 ミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "bg": "stage2_cockpit"
+    },
+    {
+      "id": "D2",
+      "unit": "逆算（還元算）",
+      "theme": "逆算の祠",
+      "bgm": "last",
+      "reward": "raygun1",
+      "stages": [
+        {
+          "stage": 1,
+          "enemy": "system_error",
+          "problem": "□ + 7 = 15 のとき、□を求めなさい。",
+          "answer": "8",
+          "intro": "廃棄宇宙船の起動端末がエラーを吐いている。「逆算で復旧しろってさ」「落ち着いて、逆の計算で戻すミャ」",
+          "clear": "端末が復旧し、扉のロックが外れた。",
+          "steps": [
+            {
+              "id": "step1",
+              "prompt": "□を求めるには？",
+              "choices": [
+                {
+                  "text": "15 − 7",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解！□=8。たした7は、引いて戻す。",
+                  "hint": "",
+                  "next": "clear",
+                  "log": "15－7＝8 → □＝8"
+                },
+                {
+                  "text": "15 + 7",
+                  "correct": false,
+                  "mistake": "逆算の向きミス",
+                  "feedback": "たすのは逆ミャ。+は−で戻すミャ。",
+                  "hint": "",
+                  "next": "damage"
+                },
+                {
+                  "text": "7 − 15",
+                  "correct": false,
+                  "mistake": "順序ミス",
+                  "feedback": "大きい方から引くミャ。15−7 ミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "stage": 2,
+          "enemy": "automaton",
+          "problem": "□ × 4 + 3 = 23 のとき、□を求めなさい。",
+          "answer": "5",
+          "intro": "船内のコンソールに、もつれた計算式。「順番を間違えると感電するやつだな」「最後にした計算から戻すミャ」",
+          "clear": "コンソールが沈黙し、道が開いた。",
+          "steps": [
+            {
+              "id": "step1",
+              "prompt": "まず何を戻す？",
+              "choices": [
+                {
+                  "text": "23 から 3 をひく",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解。最後にたした +3 から戻すのが順序。",
+                  "hint": "",
+                  "next": "step2",
+                  "log": "23－3＝20"
+                },
+                {
+                  "text": "23 を 4 でわる",
+                  "correct": false,
+                  "mistake": "演算の順序ミス",
+                  "feedback": "順序が逆ミャ。先に +3 を消すミャ。",
+                  "hint": "最後にした計算は何だった？",
+                  "next": "damage"
+                },
+                {
+                  "text": "23 に 3 をたす",
+                  "correct": false,
+                  "mistake": "逆算の向きミス",
+                  "feedback": "+は−で戻すミャ。たすんじゃないミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            },
+            {
+              "id": "step2",
+              "prompt": "20 をどうする？",
+              "choices": [
+                {
+                  "text": "20 を 4 でわる",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解！20÷4=5。□=5。",
+                  "hint": "",
+                  "next": "clear",
+                  "log": "20÷4＝5 → □＝5"
+                },
+                {
+                  "text": "20 に 4 をかける",
+                  "correct": false,
+                  "mistake": "逆算の向きミス",
+                  "feedback": "×は÷で戻すミャ。わるミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "stage": 3,
+          "enemy": "pirate3",
+          "problem": "(□ − 2) × 3 = 18 のとき、□を求めなさい。",
+          "answer": "8",
+          "intro": "船の奥で、宇宙海賊が宝箱に逆算の鍵をかけている。「かっこ付きか、シャレてるじゃねえか」「外側の×3から戻すミャ」",
+          "clear": "鍵が外れ、宝箱から装備が出てきた！",
+          "steps": [
+            {
+              "id": "step1",
+              "prompt": "まず何を戻す？",
+              "choices": [
+                {
+                  "text": "18 を 3 でわる",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解。かっこの外の ×3 は ÷3 で戻す。6になる。",
+                  "hint": "",
+                  "next": "step2",
+                  "log": "18÷3＝6"
+                },
+                {
+                  "text": "18 − 3",
+                  "correct": false,
+                  "mistake": "演算の順序ミス",
+                  "feedback": "かっこの外の ×3 から戻すミャ。",
+                  "hint": "",
+                  "next": "damage"
+                },
+                {
+                  "text": "18 × 3",
+                  "correct": false,
+                  "mistake": "逆算の向きミス",
+                  "feedback": "×は÷で戻すミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            },
+            {
+              "id": "step2",
+              "prompt": "6 ＝ □ − 2 だから、□は？",
+              "choices": [
+                {
+                  "text": "6 に 2 をたす",
+                  "correct": true,
+                  "mistake": null,
+                  "feedback": "正解！□=8。鍵が開いた！",
+                  "hint": "",
+                  "next": "clear",
+                  "log": "6＋2＝8 → □＝8"
+                },
+                {
+                  "text": "6 から 2 をひく",
+                  "correct": false,
+                  "mistake": "逆算の向きミス",
+                  "feedback": "−2 は +2 で戻すミャ。",
+                  "hint": "",
+                  "next": "damage"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "bg": "stage1_ship"
+    }
+  ]
+}
