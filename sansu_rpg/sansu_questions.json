@@ -42,6 +42,13 @@
         "happy": "gatt_happy.png",
         "surprise": "gatt_surprise.png"
       }
+    },
+    "enemyFlip": {
+      "automaton": false,
+      "space_worm": false,
+      "slime": true,
+      "pirate3": true,
+      "system_error": false
     }
   },
   "lineup": [
