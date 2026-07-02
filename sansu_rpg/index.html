@@ -90,7 +90,7 @@ button{font-family:inherit}
 
 /* ---------- stage ---------- */
 #stage{justify-content:flex-end}
-.bg-layer{position:absolute; inset:0; background-size:100% auto; background-position:center; background-repeat:no-repeat; z-index:0;
+.bg-layer{position:absolute; inset:0; background-size:100% auto; background-position:center center; background-repeat:no-repeat; z-index:0;
   background-color:#0a0d1a; transition:opacity .4s}
 .bg-layer::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(7,8,13,.35) 0%,rgba(7,8,13,.65) 45%,rgba(7,8,13,.96) 100%)}
 .topbar{position:absolute; top:0; left:0; right:0; z-index:3; display:flex; align-items:center; justify-content:space-between;
@@ -108,14 +108,24 @@ button{font-family:inherit}
 @keyframes bob{50%{transform:translateY(-8px)}}
 .enemy{height:100%; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
 .enemy.flip{transform:scaleX(-1)}
-.vint{position:absolute; left:4%; bottom:47%; z-index:2; height:30%; max-height:220px; filter:drop-shadow(0 10px 18px rgba(0,0,0,.55))}
-.gatt{position:absolute; left:20%; bottom:37%; z-index:2; height:21%; max-height:150px; filter:drop-shadow(0 8px 14px rgba(0,0,0,.5));
-  animation:bob 3.6s ease-in-out infinite}
+.vint{position:absolute; left:4%; bottom:47%; z-index:2; height:30%; max-height:220px; filter:drop-shadow(0 10px 18px rgba(0,0,0,.55)); transition:opacity .2s}
+.gatt{position:absolute; left:6%; bottom:33%; z-index:2; height:14%; max-height:100px; filter:drop-shadow(0 6px 12px rgba(0,0,0,.5));
+  animation:bob 3.6s ease-in-out infinite; transition:opacity .2s}
+.guest{position:absolute; right:3%; top:9%; z-index:2; height:42%; max-height:320px; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5)); transition:opacity .2s}
+.dim{opacity:.5}
 
-.dialog{position:relative; z-index:3; margin:0 14px 10px; display:flex; gap:10px; align-items:flex-start}
-.face{width:42px; height:42px; border-radius:10px; border:1px solid var(--line); background:var(--panel2) center/cover; flex:none}
-.bubble{flex:1; background:rgba(16,18,28,.92); border:1px solid var(--line); border-left:3px solid var(--cyan);
-  border-radius:0 12px 12px 12px; padding:11px 14px; font-size:14px; line-height:1.85; color:#d7def2; backdrop-filter:blur(6px)}
+.dialog{position:relative; z-index:4; margin:0 14px 10px; display:flex; gap:10px; align-items:flex-start}
+.face{width:44px; height:44px; border-radius:10px; border:1px solid var(--line); background:var(--panel2) center/cover; flex:none}
+.bubble{flex:1; position:relative; background:rgba(16,18,28,.94); border:1px solid var(--line); border-left:3px solid var(--cyan);
+  border-radius:0 12px 12px 12px; padding:9px 14px 11px; backdrop-filter:blur(6px)}
+.speaker{font-size:11px; font-weight:700; letter-spacing:.06em; margin-bottom:3px}
+.sp-vint{color:var(--red)} .sp-gatt{color:var(--cyan-bright)} .sp-lynette{color:#7ee0a0} .sp-panuelo{color:#ffa54d}
+.btext{font-size:14px; line-height:1.8; color:#d7def2}
+.adv-mark{position:absolute; right:12px; bottom:8px; font-size:11px; color:var(--cyan); opacity:0; animation:blink 1s steps(2) infinite}
+.adv-mark.on{opacity:1}
+@keyframes blink{50%{opacity:.25}}
+.tapcatch{position:absolute; inset:0; z-index:3}
+.tapcatch[hidden]{display:none}
 
 /* console */
 .console{position:relative; z-index:3; margin:0 12px calc(14px + env(safe-area-inset-bottom)); background:rgba(13,15,24,.96);
@@ -245,13 +255,20 @@ button{font-family:inherit}
       </div>
     </div>
     <div class="enemy-wrap" id="enemy-wrap" hidden><img class="enemy" id="enemy" alt=""></div>
+    <img class="guest" id="guest" alt="" hidden>
     <img class="vint" id="vint" alt="" hidden>
     <img class="gatt" id="gatt" alt="" hidden>
 
     <div class="dialog" id="dialog">
       <div class="face" id="face"></div>
-      <div class="bubble" id="bubble"></div>
+      <div class="bubble">
+        <div class="speaker" id="speaker"></div>
+        <div class="btext" id="bubble"></div>
+        <span class="adv-mark" id="adv-mark">▼</span>
+      </div>
     </div>
+
+    <div class="tapcatch" id="tapcatch" hidden></div>
 
     <div class="console" id="console">
       <div class="prob-label">PROBLEM</div>
@@ -375,28 +392,67 @@ $("#btn-treasure-s").onclick=()=>gotoTreasure("select");
 $("#btn-tre-back").onclick=()=>{ if(treasureBack==="select"){ buildSelect(); show("select"); } else { show("title"); initTitle(); } };
 
 /* ---------- stage flow ---------- */
+const NAMES={vint:"ヴィント",gatt:"ガット",lynette:"リュネット",panuelo:"パヌエロ"};
+
 function startDungeon(i){
   state.dgIndex=i; state.stageIndex=0; state.hp=DATA.meta.hp||3;
   const d=DATA.dungeons[i];
-  playBGM(d.bgm||"dungeon");
+  playBGM(d.bgm||"BGM_A");
   show("stage");
-  loadStage();
+  prepScene();
+  runDialogue(d.opening||[], ()=>loadStage());
 }
 function curDungeon(){ return DATA.dungeons[state.dgIndex]; }
 function curStage(){ return curDungeon().stages[state.stageIndex]; }
 
-function setVint(mood){ // normal/ok/damage
-  const f=DATA.assets.characters.vint; const file=f[mood]||f.normal;
-  const v=$("#vint"); v.src=IMG+file; v.hidden=false; v.onerror=()=>{v.hidden=true;};
+function setVint(mood){ const f=DATA.assets.characters.vint; const file=f[mood]||f.normal;
+  const v=$("#vint"); v.src=IMG+file; v.hidden=false; v.onerror=()=>{v.hidden=true;}; }
+function setGatt(mood){ const g=DATA.assets.characters.gatt; const file=(g&&(g[mood]||g.normal))||"";
+  const e=$("#gatt"); if(!file){e.hidden=true;return;} e.src=IMG+file; e.hidden=false; e.onerror=()=>{e.hidden=true;}; }
+function setGuest(who,mood){ const c=DATA.assets.characters[who]; const file=c&&(c[mood]||c.normal); if(!file) return;
+  const g=$("#guest"); g.src=IMG+file; g.hidden=false; g.classList.toggle("flip",(DATA.assets.enemyFlip&&DATA.assets.enemyFlip[who])||false); g.onerror=()=>{g.hidden=true;}; }
+function hideGuest(){ $("#guest").hidden=true; }
+function setFace(who,mood){ const c=DATA.assets.characters[who]; const file=(c&&(c[mood]||c.normal))||"";
+  $("#face").style.backgroundImage=file?`url('${IMG+file}')`:"none"; }
+
+function prepScene(){
+  const d=curDungeon(); const bgFile=DATA.assets.bg[d.bg]||"";
+  const bg=$("#bg");
+  if(bgFile){ const im=new Image(); im.onload=()=>bg.style.backgroundImage=`url('${IMG+bgFile}')`;
+    im.onerror=()=>bg.style.backgroundImage="none"; im.src=IMG+bgFile; }
+  $("#enemy-wrap").hidden=true; hideGuest(); setVint("normal"); setGatt("normal");
 }
-function setGatt(mood){ // normal/happy/surprise (standing companion, 1.5x)
-  const g=DATA.assets.characters.gatt; const file=(g&&(g[mood]||g.normal))||"";
-  const el2=$("#gatt"); if(!file){ el2.hidden=true; return; }
-  el2.src=IMG+file; el2.hidden=false; el2.onerror=()=>{el2.hidden=true;};
+
+/* ---------- dialogue ---------- */
+let dseq=[], di=0, dcb=null, dActive=false;
+function runDialogue(seq, cb){
+  dseq=seq||[]; di=0; dcb=cb||null;
+  if(!dseq.length){ if(cb) cb(); return; }
+  dActive=true;
+  $("#console").style.display="none";
+  $("#dialog").style.display="flex";
+  $("#tapcatch").hidden=false;
+  renderLine();
 }
-function setFace(who,mood){ // who: gatt/vint
-  const c=DATA.assets.characters[who]; const file=(c&&(c[mood]||c.normal))||"";
-  $("#face").style.backgroundImage=file?`url('${IMG+file}')`:"none";
+function renderLine(){
+  if(di>=dseq.length){ endDialogue(); return; }
+  const ln=dseq[di], who=ln.s, mood=ln.m||"normal";
+  if(who==="vint") setVint(mood);
+  else if(who==="gatt") setGatt(mood);
+  else if(who==="lynette"||who==="panuelo") setGuest(who,mood);
+  $("#vint").classList.toggle("dim", who!=="vint");
+  $("#gatt").classList.toggle("dim", who!=="gatt");
+  const g=$("#guest"); if(!g.hidden) g.classList.toggle("dim", !(who==="lynette"||who==="panuelo"));
+  setFace(who,mood);
+  const sp=$("#speaker"); sp.textContent=NAMES[who]||""; sp.className="speaker sp-"+who;
+  $("#bubble").textContent=ln.t||"";
+  $("#adv-mark").classList.add("on");
+}
+function advanceDialogue(){ if(!dActive) return; di++; renderLine(); }
+function endDialogue(){
+  dActive=false; $("#tapcatch").hidden=true; $("#adv-mark").classList.remove("on");
+  ["#vint","#gatt","#guest"].forEach(s=>$(s).classList.remove("dim"));
+  const cb=dcb; dcb=null; if(cb) cb();
 }
 
 function loadStage(){
@@ -404,29 +460,26 @@ function loadStage(){
   renderHP();
   $("#stage-tag").textContent="STAGE "+st.stage;
   $("#worklog").innerHTML="";
-  // bg (per dungeon/unit, with stage-level fallback)
-  const bgKey=curDungeon().bg||st.bg;
-  const bgFile=DATA.assets.bg[bgKey]||"";
+  const d=curDungeon(); const bgFile=DATA.assets.bg[d.bg]||"";
   const bg=$("#bg");
   if(bgFile){ const im=new Image(); im.onload=()=>bg.style.backgroundImage=`url('${IMG+bgFile}')`;
     im.onerror=()=>bg.style.backgroundImage="none"; im.src=IMG+bgFile; }
-  // enemy
   const wrap=$("#enemy-wrap"), en=$("#enemy");
-  if(st.enemy){
-    wrap.hidden=false; en.src=IMG+st.enemy+".png"; en.onerror=()=>{wrap.hidden=true;};
-    const flip=(DATA.assets.enemyFlip&&DATA.assets.enemyFlip[st.enemy])||false;
-    en.classList.toggle("flip", flip);
+  if(st.enemy){ wrap.hidden=false; en.src=IMG+st.enemy+".png"; en.onerror=()=>{wrap.hidden=true;};
+    en.classList.toggle("flip",(DATA.assets.enemyFlip&&DATA.assets.enemyFlip[st.enemy])||false);
   } else wrap.hidden=true;
-  setVint("normal");
-  setGatt("normal");
-  // intro dialog
-  setFace("gatt","normal");
-  $("#bubble").innerHTML=st.intro||"";
-  // console
+  setVint("normal"); setGatt("normal"); hideGuest();
   $("#prob").textContent=st.problem;
   state.stepId=st.steps[0].id;
+  const seq = st.introSeq || (st.intro?[{s:"gatt",m:"normal",t:st.intro}]:[]);
+  runDialogue(seq, showConsole);
+}
+function showConsole(){
+  hideGuest();
+  $("#dialog").style.display="none";
   renderStep();
-  const con=$("#console"); if(con.scrollIntoView) con.scrollIntoView({block:"nearest"});
+  const con=$("#console"); con.style.display="block";
+  if(con.scrollIntoView) con.scrollIntoView({block:"nearest"});
 }
 
 function findStep(id){ return curStage().steps.find(s=>s.id===id); }
@@ -492,41 +545,48 @@ function stageClear(){
   playSE("door");
   const st=curStage(), d=curDungeon();
   const last=state.stageIndex>=d.stages.length-1;
-  const o=overlay(`
-    <div class="ov-emoji">🔓</div>
-    <div class="ov-title">ステージ クリア</div>
-    <div class="ov-text">${st.clear||""}</div>
-    <button class="btn go" id="ov-next">${last?"ダンジョンを制覇する →":"次のステージへ →"}</button>
-  `);
-  $("#ov-next").onclick=()=>{ closeOverlay(); last?dungeonClear():nextStage(); };
+  const proceed=()=>{
+    const o=overlay(`
+      <div class="ov-emoji">🔓</div>
+      <div class="ov-title">ステージ クリア</div>
+      <div class="ov-text">${st.clear||""}</div>
+      <button class="btn go" id="ov-next">${last?"ダンジョンを制覇する →":"次のステージへ →"}</button>
+    `);
+    $("#ov-next").onclick=()=>{ closeOverlay(); last?dungeonClear():nextStage(); };
+  };
+  if(st.clearSeq&&st.clearSeq.length){ runDialogue(st.clearSeq, proceed); }
+  else proceed();
 }
 function nextStage(){ state.stageIndex++; loadStage(); }
 
 function dungeonClear(){
   const d=curDungeon();
-  const firstClearThisLoop=!state.cleared.includes(d.id);
   // decide the item to grant this clear
   let gained = (!state.ngplus) ? d.reward : (d.rewardNG||null);
   let isNew = false;
   if(gained && !state.items.includes(gained)){ state.items.push(gained); isNew=true; }
   if(!state.cleared.includes(d.id)) state.cleared.push(d.id);
-  // unlock NG+ once all units cleared in the first loop
   if(!state.ngplus && DATA.dungeons.every(x=>state.cleared.includes(x.id))) state.ngplus=true;
   save();
   const meta=gained&&DATA.assets.items?DATA.assets.items[gained]:null;
   const rewardFile=(isNew&&gained)?IMG+gained+".png":"";
-  if(isNew) playSE("item"); else playSE("door");
-  setGatt("happy");
   const isFinal=state.dgIndex>=DATA.dungeons.length-1;
   const itemLine = isNew&&meta ? `「${meta.name}」を手に入れた！` : "この単元のお宝はすでに回収済みだ。";
-  const o=overlay(`
-    <div class="ov-emoji">🏴‍☠️</div>
-    <div class="ov-title gold">ダンジョン制覇！</div>
-    ${rewardFile?`<img class="reward-item" src="${rewardFile}" onerror="this.style.display='none'">`:""}
-    <div class="ov-text">${itemLine}<br><span style="color:#8a93b0">トレジャー ${state.items.length}/${(DATA.assets.itemOrder||[]).length}</span></div>
-    <button class="btn go" id="ov-next">${isFinal?"最終エリアへ →":"ダンジョン選択へ →"}</button>
-  `);
-  $("#ov-next").onclick=()=>{ closeOverlay(); isFinal?showEnding():backToSelect(); };
+  const showReward=()=>{
+    if(isNew) playSE("item"); else playSE("door");
+    setGatt("happy");
+    const o=overlay(`
+      <div class="ov-emoji">🏴‍☠️</div>
+      <div class="ov-title gold">ダンジョン制覇！</div>
+      ${rewardFile?`<img class="reward-item" src="${rewardFile}" onerror="this.style.display='none'">`:""}
+      <div class="ov-text">${itemLine}<br><span style="color:#8a93b0">トレジャー ${state.items.length}/${(DATA.assets.itemOrder||[]).length}</span></div>
+      <button class="btn go" id="ov-next">${isFinal?"最終エリアへ →":"ダンジョン選択へ →"}</button>
+    `);
+    $("#ov-next").onclick=()=>{ closeOverlay(); isFinal?showEnding():backToSelect(); };
+  };
+  $("#enemy-wrap").hidden=true;
+  if(d.ending&&d.ending.length){ runDialogue(d.ending, showReward); }
+  else showReward();
 }
 
 function stageFail(){
@@ -563,6 +623,8 @@ function showEnding(){
 }
 
 /* ---------- controls ---------- */
+$("#tapcatch").onclick=()=>advanceDialogue();
+$("#dialog").addEventListener("click",()=>advanceDialogue());
 $("#btn-mute").onclick=()=>setMute(!muted);
 $("#btn-quit").onclick=()=>{ if(confirm("ダンジョンを抜けて選択画面に戻る？")) backToSelect(); };
 

@@ -2,11 +2,11 @@
   "meta": {
     "title": "怪盗ヴィント ～シンギュラリンゴを追え～",
     "subtitle": "小5算数・途中式ゲームブック",
-    "version": "1.0",
+    "version": "2.0",
     "hp": 3,
     "goal": "ブラックホール最奥のシンギュラリンゴを手に入れる",
     "wrongOutcome": "damage",
-    "notes": "correct=trueでnext(step/clear)へ。誤答はnext=damage：HP-1＋feedback/hint、同stepで再挑戦。背景はdungeon.bg（単元単位）。correct選択肢のlogを画面の途中式に追記。1周目で各単元のreward、2周目(ngplus)で偶数単元のrewardNG(レア度3)を入手→全12コンプ。"
+    "notes": "correct=trueでnext(step/clear)へ。誤答はnext=damage：HP-1＋feedback/hint、同stepで再挑戦。背景はdungeon.bg（単元単位）。correct選択肢のlogを画面の途中式に追記。1周目で各単元のreward、2周目(ngplus)で偶数単元のrewardNG(レア度3)を入手→全12コンプ。 intro/clearは会話配列（テキスト送り）。dungeon.prologue/epilogueは幕間。stage.npcはその場面に常設する相手役。"
   },
   "assets": {
     "bgmDir": "bgm/",
@@ -40,12 +40,30 @@
       "vint": {
         "normal": "vint_normal.png",
         "ok": "vint_ok.png",
-        "damage": "vint_damage.png"
+        "damage": "vint_damage.png",
+        "smile": "vint_smile.png",
+        "laugh": "vint_laugh.png",
+        "surprise": "vint_surprise.png",
+        "panic": "vint_panic.png",
+        "think": "vint_think.png"
       },
       "gatt": {
         "normal": "gatt_normal.png",
         "happy": "gatt_happy.png",
-        "surprise": "gatt_surprise.png"
+        "surprise": "gatt_surprise.png",
+        "done": "gatt_done.png",
+        "smug": "gatt_smug.png",
+        "sleepy": "gatt_sleepy.png"
+      },
+      "lynette": {
+        "normal": "lynette_normal.png",
+        "surprise": "lynette_surprise.png",
+        "happy": "lynette_happy.png"
+      },
+      "panuelo": {
+        "normal": "panuelo_normal.png",
+        "damage": "panuelo_damage.png",
+        "defeat": "panuelo_defeat.png"
       }
     },
     "enemyFlip": {
@@ -60,7 +78,9 @@
       "laser_trap": false,
       "oxygen": false,
       "spike_trap": false,
-      "trap_box": false
+      "trap_box": false,
+      "panuelo": false,
+      "lynette": false
     },
     "items": {
       "handgun1": {
@@ -188,11 +208,9 @@
       "stages": [
         {
           "stage": 1,
-          "enemy": "system_error",
+          "enemy": null,
           "problem": "8 と 12 の最大公約数はいくつ？",
           "answer": "4",
-          "intro": "出発の合図を待つ操縦室。「まずは肩慣らしだ。約数でも数えるか」「最大公約数、間違えるなミャ」",
-          "clear": "端末が青く点いた。航路が開ける。",
           "steps": [
             {
               "id": "step1",
@@ -233,28 +251,50 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "lynette",
+              "m": "normal",
+              "t": "最初の封印。8 と 12、両方をきっちり割り切れる、いちばん大きい数を答えて。"
+            },
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "公約数のうち最大のやつミャ。落ち着いていくミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "最大公約数は4。楽勝だ。"
+            },
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "1問目ミャ。調子に乗るの早いミャ。"
+            }
           ]
         },
         {
           "stage": 2,
-          "enemy": "automaton",
+          "enemy": null,
           "problem": "6 と 8 の最小公倍数はいくつ？",
           "answer": "24",
-          "intro": "航路計算に公倍数が要る。「タイミングを合わせるのは倍数の仕事だな」「最小公倍数を出すミャ」",
-          "clear": "計算が通り、エンジンが同調した。",
           "steps": [
             {
               "id": "step1",
-              "prompt": "まず何をする？",
+              "prompt": "最小公倍数を見つけるには？",
               "choices": [
                 {
-                  "text": "6と8を素因数に分ける",
+                  "text": "6と8の倍数を書き出して、最初に共通する数を探す",
                   "correct": true,
                   "mistake": null,
-                  "feedback": "正解。6=2×3、8=2×2×2。",
+                  "feedback": "正解。倍数を並べて、最初にそろう数をさがす。",
                   "hint": "",
                   "next": "step2",
-                  "log": "6=2×3, 8=2×2×2"
+                  "log": "6の倍数 6,12,18,24… ／ 8の倍数 8,16,24…"
                 },
                 {
                   "text": "6と8をたす",
@@ -268,7 +308,7 @@
                   "text": "6×8をそのまま答える",
                   "correct": false,
                   "mistake": "最小でない",
-                  "feedback": "48は公倍数だけど“最小”じゃないミャ。",
+                  "feedback": "48は共通だけど“最初”じゃないミャ。",
                   "hint": "",
                   "next": "damage"
                 }
@@ -276,23 +316,23 @@
             },
             {
               "id": "step2",
-              "prompt": "最小公倍数は？",
+              "prompt": "最初に共通する倍数は？",
               "choices": [
                 {
                   "text": "24",
                   "correct": true,
                   "mistake": null,
-                  "feedback": "正解。2×2×2×3＝24。",
+                  "feedback": "正解。6と8が最初にそろうのは24。",
                   "hint": "",
                   "next": "clear",
-                  "log": "2×2×2×3＝24"
+                  "log": "6と8の最小公倍数＝24"
                 },
                 {
                   "text": "48",
                   "correct": false,
                   "mistake": "最小でない",
-                  "feedback": "6×8＝48は最小じゃないミャ。24で足りるミャ。",
-                  "hint": "半分にできない？",
+                  "feedback": "48もそろうけど、もっと手前に24があるミャ。",
+                  "hint": "24でそろわない？",
                   "next": "damage"
                 },
                 {
@@ -305,15 +345,37 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "lynette",
+              "m": "normal",
+              "t": "次はタイミング合わせ。6 と 8、両方の倍数で最初にそろう数を。"
+            },
+            {
+              "s": "vint",
+              "m": "think",
+              "t": "倍数を書き出して、ぶつかるとこを探すのか。"
+            },
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "それが最小公倍数ミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "smile",
+              "t": "24でそろった。エンジン同調、っと。"
+            }
           ]
         },
         {
           "stage": 3,
-          "enemy": "overheat",
+          "enemy": null,
           "problem": "たて6cm・よこ8cmの長方形を、同じ大きさの正方形ですきまなく敷き詰める。いちばん大きい正方形の一辺は？",
           "answer": "2cm",
-          "intro": "格納庫の床を正方形パネルで敷き詰める設計図。「几帳面だねえ」「一辺は最大公約数で決まるミャ」",
-          "clear": "床が光り、隠し通路が現れた。",
           "steps": [
             {
               "id": "step1",
@@ -377,7 +439,85 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "lynette",
+              "m": "normal",
+              "t": "格納庫の床を、同じ大きさの正方形ですきまなく敷き詰めたいの。いちばん大きい一辺は？"
+            },
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "たてとよこ、両方を割り切れる最大の数ミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "一辺2cm。ぴったりだ。"
+            }
           ]
+        }
+      ],
+      "opening": [
+        {
+          "s": "lynette",
+          "m": "normal",
+          "t": "聞こえる？　怪盗ヴィント。わたしはリュネット。今回の“お宝”の場所を教えるわ。"
+        },
+        {
+          "s": "vint",
+          "m": "smile",
+          "t": "モニター越しの美人からの依頼か。悪くない朝だ。"
+        },
+        {
+          "s": "gatt",
+          "m": "done",
+          "t": "依頼の中身を聞くミャ。ナンパはあとにするミャ。"
+        },
+        {
+          "s": "lynette",
+          "m": "normal",
+          "t": "目標は伝説の黄金の果実——シンギュラリンゴ。ブラックホールの最奥に眠っているわ。"
+        },
+        {
+          "s": "vint",
+          "m": "think",
+          "t": "ブラックホールの奥、ねえ。道のりは長そうだ。"
+        },
+        {
+          "s": "lynette",
+          "m": "normal",
+          "t": "だから道中の“数の封印”を解いて進んで。まずは航路計算——倍数と約数から。"
+        },
+        {
+          "s": "gatt",
+          "m": "smug",
+          "t": "算数は任せるミャ。相棒は口だけ達者ミャ。"
+        },
+        {
+          "s": "vint",
+          "m": "laugh",
+          "t": "聞こえてるぞ、ガット。"
+        }
+      ],
+      "ending": [
+        {
+          "s": "lynette",
+          "m": "happy",
+          "t": "お見事。航路が引けたわ。次の座標を送る。"
+        },
+        {
+          "s": "vint",
+          "m": "smug",
+          "t": "この調子なら朝飯前だな。"
+        },
+        {
+          "s": "gatt",
+          "m": "done",
+          "t": "フラグを立てるなミャ…。"
         }
       ]
     },
@@ -392,11 +532,9 @@
       "stages": [
         {
           "stage": 1,
-          "enemy": "slime",
+          "enemy": null,
           "problem": "12/18 を、いちばん簡単な分数にしなさい。",
           "answer": "2/3",
-          "intro": "ワープ空間で数字が歪む。「まずは約分してすっきりさせろってさ」「最後まで割り切るミャ」",
-          "clear": "歪みが整い、光の道が伸びた。",
           "steps": [
             {
               "id": "step1",
@@ -468,15 +606,32 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "vint",
+              "m": "normal",
+              "t": "12/18……こいつを一番簡単な形に、か。"
+            },
+            {
+              "s": "gatt",
+              "m": "smug",
+              "t": "最後まで割り切るミャ。途中でやめたら承知しないミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "2/3。すっきりした。"
+            }
           ]
         },
         {
           "stage": 2,
-          "enemy": "space_worm",
+          "enemy": null,
           "problem": "1/2 + 1/3 を計算しなさい。",
           "answer": "5/6",
-          "intro": "光の格子に足し算の式。「分母がそろってねえな」「通分してからミャ。分子だけ足すの厳禁ミャ」",
-          "clear": "格子が沈み、道ができた。",
           "steps": [
             {
               "id": "step1",
@@ -563,15 +718,32 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "lynette",
+              "m": "normal",
+              "t": "光の格子に足し算。分母がそろってないわね。"
+            },
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "通分してからミャ。分子だけ足すのは厳禁ミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "smile",
+              "t": "5/6。分母は足さない、と。"
+            }
           ]
         },
         {
           "stage": 3,
-          "enemy": "slime",
+          "enemy": null,
           "problem": "3/4 − 1/6 を計算しなさい。",
           "answer": "7/12",
-          "intro": "ワープ出口の最終ロック、引き算だ。「決めるぜ」「分母を引いたら承知しないミャ」",
-          "clear": "ロックが解け、光へ抜けた。",
           "steps": [
             {
               "id": "step1",
@@ -658,7 +830,45 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "vint",
+              "m": "think",
+              "t": "引き算か。ここでも分母は……"
+            },
+            {
+              "s": "gatt",
+              "m": "done",
+              "t": "引かないミャ。分かってるなら口に出すミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "laugh",
+              "t": "7/12！　ワープ、抜けるぞ！"
+            }
           ]
+        }
+      ],
+      "opening": [
+        {
+          "s": "lynette",
+          "m": "normal",
+          "t": "ワープに入るわ。空間が歪むと、数字も歪む。分数の封印に気をつけて。"
+        },
+        {
+          "s": "gatt",
+          "m": "normal",
+          "t": "約分と通分、基本を丁寧にやるミャ。"
+        }
+      ],
+      "ending": [
+        {
+          "s": "lynette",
+          "m": "happy",
+          "t": "きれいな計算。ワープ成功よ。"
         }
       ]
     },
@@ -672,11 +882,9 @@
       "stages": [
         {
           "stage": 1,
-          "enemy": "slime",
+          "enemy": null,
           "problem": "50個の20％はいくつ？",
           "answer": "10",
-          "intro": "夢の中の水晶洞。「割合の練習だと？夢でも勉強かよ」「20％は0.2ミャ。落ち着くミャ」",
-          "clear": "水晶がやわらかく光った。",
           "steps": [
             {
               "id": "step1",
@@ -740,15 +948,32 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "gatt",
+              "m": "sleepy",
+              "t": "20%は0.2ミャ……zzz"
+            },
+            {
+              "s": "vint",
+              "m": "panic",
+              "t": "寝るな！　50の20%だぞ！"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "10個。ほら起きろ。"
+            }
           ]
         },
         {
           "stage": 2,
-          "enemy": "space_worm",
+          "enemy": null,
           "problem": "40個のうち10個は、全体の何％？",
           "answer": "25％",
-          "intro": "水晶が何％光るか計れという。「割合を出すのは割り算だな」「何が“もと”か見極めるミャ」",
-          "clear": "光の割合がぴたりと合った。",
           "steps": [
             {
               "id": "step1",
@@ -812,15 +1037,27 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "lynette",
+              "m": "normal",
+              "t": "水晶が何％光るか。“もとにする量”を見極めて。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "smile",
+              "t": "25%。もとは全体の40だ。"
+            }
           ]
         },
         {
           "stage": 3,
-          "enemy": "slime",
+          "enemy": null,
           "problem": "ある数の30％が18です。ある数はいくつ？",
           "answer": "60",
-          "intro": "大水晶が指し示す数。「もとの数を逆算するのか」「割る向きを間違えないミャ」",
-          "clear": "大水晶が砕け、宝物が現れた。",
           "steps": [
             {
               "id": "step1",
@@ -884,7 +1121,55 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "今度はもとの数を逆算ミャ。割る向きに注意ミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "もとは60。夢、覚めるぞ。"
+            }
           ]
+        }
+      ],
+      "opening": [
+        {
+          "s": "gatt",
+          "m": "sleepy",
+          "t": "……ふぁ。なんだか眠いミャ……。"
+        },
+        {
+          "s": "vint",
+          "m": "surprise",
+          "t": "おい、ガット⁉　急に電池切れか？"
+        },
+        {
+          "s": "lynette",
+          "m": "surprise",
+          "t": "信号が乱れてる……これは、夢の中？　割合の試練が見えるわ。"
+        },
+        {
+          "s": "vint",
+          "m": "think",
+          "t": "夢でも勉強とはね。"
+        }
+      ],
+      "ending": [
+        {
+          "s": "gatt",
+          "m": "normal",
+          "t": "……はっ。寝てないミャ。寝てないミャ。"
+        },
+        {
+          "s": "vint",
+          "m": "laugh",
+          "t": "よだれ出てたぞ。"
         }
       ]
     },
@@ -899,11 +1184,9 @@
       "stages": [
         {
           "stage": 1,
-          "enemy": "spike_trap",
+          "enemy": null,
           "problem": "12 : 18 を、いちばん簡単な比にしなさい。",
           "answer": "2:3",
-          "intro": "不時着した残骸の山。「まずは比を簡単にしろって」「両方を同じ数で割るミャ」",
-          "clear": "がれきが動き、道が開いた。",
           "steps": [
             {
               "id": "step1",
@@ -967,15 +1250,27 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "まず比を簡単にするミャ。両方を同じ数で割るミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "2:3。すっきり。"
+            }
           ]
         },
         {
           "stage": 2,
-          "enemy": "trap_box",
+          "enemy": null,
           "problem": "2 : 3 の比で、2 にあたる量が 8 のとき、3 にあたる量は？",
           "answer": "12",
-          "intro": "部品の配合比が書かれている。「片方が分かれば残りも出るな」「1あたりを先に出すミャ」",
-          "clear": "配合が合い、装置が動いた。",
           "steps": [
             {
               "id": "step1",
@@ -1039,15 +1334,32 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "lynette",
+              "m": "normal",
+              "t": "配合比よ。片方が分かれば、残りも出せる。"
+            },
+            {
+              "s": "vint",
+              "m": "think",
+              "t": "1あたりを先に出すのがコツ、だな。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "smile",
+              "t": "3にあたるのは12。"
+            }
           ]
         },
         {
           "stage": 3,
-          "enemy": "automaton",
+          "enemy": null,
           "problem": "20個を 2 : 3 に分けます。多いほうは何個？",
           "answer": "12個",
-          "intro": "物資を比で分けることになった。「取り分でモメるやつだ」「まず全部で何等分か、ミャ」",
-          "clear": "分配が済み、隠し扉が開いた。",
           "steps": [
             {
               "id": "step1",
@@ -1111,7 +1423,45 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "物資を比で分けるミャ。全部で何等分か、先に考えるミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "多いほうは12個。取り分完了。"
+            }
           ]
+        }
+      ],
+      "opening": [
+        {
+          "s": "lynette",
+          "m": "surprise",
+          "t": "きゃっ⁉　衝撃！　……不時着したみたい。機体が残骸だらけ。"
+        },
+        {
+          "s": "vint",
+          "m": "panic",
+          "t": "うおっと、乱暴な着地だ。"
+        },
+        {
+          "s": "gatt",
+          "m": "normal",
+          "t": "部品を組み直すのに“比”が要るミャ。"
+        }
+      ],
+      "ending": [
+        {
+          "s": "lynette",
+          "m": "happy",
+          "t": "修理完了。飛べるわ。ありがとう。"
         }
       ]
     },
@@ -1125,11 +1475,9 @@
       "stages": [
         {
           "stage": 1,
-          "enemy": "system_error",
+          "enemy": null,
           "problem": "3回のテストが 60点・80点・70点。平均は何点？",
           "answer": "70点",
-          "intro": "廃棄船の記録端末が点滅する。「平均点でも出すか」「合計してから個数で割るミャ」",
-          "clear": "記録が復元され、扉が開いた。",
           "steps": [
             {
               "id": "step1",
@@ -1185,15 +1533,27 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "合計してから、回数で割るミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "平均70点。単純明快。"
+            }
           ]
         },
         {
           "stage": 2,
-          "enemy": "oxygen",
+          "enemy": null,
           "problem": "4回のテストの平均が 75点でした。合計は何点？",
           "answer": "300点",
-          "intro": "平均から合計を逆算する。「平均×回数、だな」「割る向きに注意ミャ」",
-          "clear": "酸素供給が安定し、先へ進めた。",
           "steps": [
             {
               "id": "step1",
@@ -1257,15 +1617,27 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "lynette",
+              "m": "normal",
+              "t": "今度は平均から合計を逆に。かけ算になるわ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "smile",
+              "t": "合計300点。割る向きに気をつけた。"
+            }
           ]
         },
         {
           "stage": 3,
-          "enemy": "automaton",
+          "enemy": null,
           "problem": "ツルとカメが合わせて 8匹、足の数は 26本。カメは何匹？",
           "answer": "5匹",
-          "intro": "ツルとカメの古いパズルが起動する。「なんで宇宙船にツルとカメが」「全部ツルと仮定するのが定石ミャ」",
-          "clear": "答えが合い、最深部の宝が現れた。",
           "steps": [
             {
               "id": "step1",
@@ -1352,7 +1724,50 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "vint",
+              "m": "surprise",
+              "t": "ツルとカメ？　宇宙船で？"
+            },
+            {
+              "s": "gatt",
+              "m": "smug",
+              "t": "古典ミャ。全部ツルと仮定するのが定石ミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "laugh",
+              "t": "カメ5匹！　古典もお手のものだ。"
+            }
           ]
+        }
+      ],
+      "opening": [
+        {
+          "s": "lynette",
+          "m": "normal",
+          "t": "次は廃棄された宇宙船。記録端末が生きてるかも。気をつけて。"
+        },
+        {
+          "s": "vint",
+          "m": "normal",
+          "t": "薄気味悪いね。ガット、灯りを。"
+        },
+        {
+          "s": "gatt",
+          "m": "normal",
+          "t": "了解ミャ。……端末に平均のデータミャ。"
+        }
+      ],
+      "ending": [
+        {
+          "s": "lynette",
+          "m": "happy",
+          "t": "記録を回収できた。助かるわ。"
         }
       ]
     },
@@ -1370,8 +1785,6 @@
           "enemy": "slime",
           "problem": "120km を 2時間で進みました。速さは時速何km？",
           "answer": "時速60km",
-          "intro": "ツタの絡む通路を進む。「速さ＝距離÷時間、基本だな」「式の向きミャ」",
-          "clear": "通路のツタが引いた。",
           "steps": [
             {
               "id": "step1",
@@ -1435,6 +1848,20 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "速さ＝距離÷時間ミャ。式の向きミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "時速60km。ツタを振り切った。"
+            }
           ]
         },
         {
@@ -1442,8 +1869,6 @@
           "enemy": "space_worm",
           "problem": "時速40kmで 3時間 進みました。進んだ距離は？",
           "answer": "120km",
-          "intro": "距離を見積もる必要がある。「速さ×時間で距離、と」「かけ算ミャ」",
-          "clear": "距離が読め、抜け道が見えた。",
           "steps": [
             {
               "id": "step1",
@@ -1507,15 +1932,27 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "lynette",
+              "m": "normal",
+              "t": "次は距離。速さ×時間ね。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "smile",
+              "t": "120km。抜け道が見えた。"
+            }
           ]
         },
         {
           "stage": 3,
-          "enemy": "overheat",
+          "enemy": "slime",
           "problem": "180km を 時速60km で進みます。何時間かかる？",
           "answer": "3時間",
-          "intro": "脱出まで何時間かかるか。「距離÷速さで時間だ」「単位を見失うなミャ」",
-          "clear": "配管が冷え、脱出路が開いた。",
           "steps": [
             {
               "id": "step1",
@@ -1579,7 +2016,55 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "vint",
+              "m": "think",
+              "t": "脱出まで何時間か……距離÷速さ、か。"
+            },
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "単位を見失うなミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "3時間。配管が冷えた、今だ！"
+            }
           ]
+        }
+      ],
+      "opening": [
+        {
+          "s": "lynette",
+          "m": "surprise",
+          "t": "待って、その船……植物に侵食されてる。何かいるかも。"
+        },
+        {
+          "s": "gatt",
+          "m": "surprise",
+          "t": "ぬめっとしたのが来たミャ！"
+        },
+        {
+          "s": "vint",
+          "m": "smile",
+          "t": "スライムか。逃げ足の“速さ”で勝負といこう。"
+        }
+      ],
+      "ending": [
+        {
+          "s": "gatt",
+          "m": "done",
+          "t": "スライムまみれミャ……あとで洗うミャ。"
+        },
+        {
+          "s": "vint",
+          "m": "laugh",
+          "t": "いい匂いはしないな。"
         }
       ]
     },
@@ -1593,11 +2078,9 @@
       "stages": [
         {
           "stage": 1,
-          "enemy": "pirate1",
+          "enemy": null,
           "problem": "□ ＋ 7 ＝ 15 のとき、□ を求めなさい。",
           "answer": "8",
-          "intro": "遺跡の起動盤がエラーを吐く。「逆算で直せってか」「逆の計算で戻すミャ」",
-          "clear": "起動盤が復旧し、扉が開いた。",
           "steps": [
             {
               "id": "step1",
@@ -1630,15 +2113,32 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "たした7は、引いて戻すミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "□は8。まず一枚。"
+            },
+            {
+              "s": "panuelo",
+              "m": "damage",
+              "t": "ぐっ……やるじゃねえか。"
+            }
           ]
         },
         {
           "stage": 2,
-          "enemy": "pirate2",
+          "enemy": null,
           "problem": "□ × 4 ＋ 3 ＝ 23 のとき、□ を求めなさい。",
           "answer": "5",
-          "intro": "もつれた封印式が浮かぶ。「順番間違えると燃えそうだな」「最後の計算から戻すミャ」",
-          "clear": "封印がほどけ、道が現れた。",
           "steps": [
             {
               "id": "step1",
@@ -1694,15 +2194,37 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "panuelo",
+              "m": "normal",
+              "t": "次はどうだ！　順番を間違えりゃ丸焦げだぞ！"
+            },
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "最後にした計算から戻すミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "smile",
+              "t": "□は5。丸焦げはお前のほうだったな。"
+            },
+            {
+              "s": "panuelo",
+              "m": "damage",
+              "t": "ぬぐぐ……！"
+            }
           ]
         },
         {
           "stage": 3,
-          "enemy": "pirate3",
+          "enemy": null,
           "problem": "(□ − 2) × 3 ＝ 18 のとき、□ を求めなさい。",
           "answer": "8",
-          "intro": "最奥の扉に、かっこ付きの鍵。「シャレてるね」「外側から戻すミャ」",
-          "clear": "鍵が開き、宝が姿を見せた。",
           "steps": [
             {
               "id": "step1",
@@ -1758,7 +2280,75 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "panuelo",
+              "m": "normal",
+              "t": "最後の扉だ！　かっこ付き、そう簡単に開くかよ！"
+            },
+            {
+              "s": "vint",
+              "m": "think",
+              "t": "外側の×3から戻す。だろ？"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "laugh",
+              "t": "□は8。扉、開いたぜ。"
+            },
+            {
+              "s": "panuelo",
+              "m": "defeat",
+              "t": "ば、馬鹿な……この俺が算数で……！"
+            }
           ]
+        }
+      ],
+      "opening": [
+        {
+          "s": "lynette",
+          "m": "normal",
+          "t": "惑星の遺跡ね。中に“逆算の扉”がある。……あら、反応がもう一つ。"
+        },
+        {
+          "s": "panuelo",
+          "m": "normal",
+          "t": "はっはァ！　そこまでだ、コソ泥ども！　このパヌエロ様のシマで何してやがる！"
+        },
+        {
+          "s": "vint",
+          "m": "smile",
+          "t": "海賊のお出ましか。ご挨拶どうも。"
+        },
+        {
+          "s": "panuelo",
+          "m": "normal",
+          "t": "シンギュラリンゴは俺がいただく！　扉の逆算、解けるもんなら解いてみろ！"
+        },
+        {
+          "s": "gatt",
+          "m": "normal",
+          "t": "逆の計算で戻すミャ。落ち着いていくミャ。"
+        }
+      ],
+      "ending": [
+        {
+          "s": "lynette",
+          "m": "happy",
+          "t": "パヌエロを退けたのね。さすが。"
+        },
+        {
+          "s": "gatt",
+          "m": "smug",
+          "t": "頭脳の勝利ミャ。"
+        },
+        {
+          "s": "vint",
+          "m": "smug",
+          "t": "まあ、俺にかかればな。"
         }
       ]
     },
@@ -1773,11 +2363,9 @@
       "stages": [
         {
           "stage": 1,
-          "enemy": "pirate3",
+          "enemy": null,
           "problem": "A・B・C の3人を1列に並べます。並べ方は何通り？",
           "answer": "6通り",
-          "intro": "ブラックホール直前、最後の試練。「最後は数え上げか」「順に×していくミャ」",
-          "clear": "並びが揃い、光の橋が架かった。",
           "steps": [
             {
               "id": "step1",
@@ -1841,15 +2429,27 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "順に×していくミャ。同じ人は二度使えないミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "ok",
+              "t": "6通り。次だ。"
+            }
           ]
         },
         {
           "stage": 2,
-          "enemy": "space_worm",
+          "enemy": null,
           "problem": "4人から2人の代表を選びます。選び方は何通り？",
           "answer": "6通り",
-          "intro": "代表を選ぶ試練。「順番ありで数えて、ダブりを消す」「割るのを忘れるなミャ」",
-          "clear": "選出が済み、次の間が開いた。",
           "steps": [
             {
               "id": "step1",
@@ -1913,15 +2513,37 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "panuelo",
+              "m": "normal",
+              "t": "順番を数えたら、ダブりを消せ！　できるか⁉"
+            },
+            {
+              "s": "gatt",
+              "m": "normal",
+              "t": "重なりは割って消すミャ。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "smile",
+              "t": "6通り。詰めが甘いぜ。"
+            },
+            {
+              "s": "panuelo",
+              "m": "damage",
+              "t": "ぐおおっ！"
+            }
           ]
         },
         {
           "stage": 3,
-          "enemy": "automaton",
+          "enemy": null,
           "problem": "0・1・2 のカードを使って2けたの整数を作ります。何通り？（同じカードは1回だけ・十の位に0は使えない）",
           "answer": "4通り",
-          "intro": "最後の扉に数の鍵。「0が先頭はダメ、と」「使えるカードを見極めるミャ」",
-          "clear": "鍵が解け、シンギュラリンゴへの道が開いた。",
           "steps": [
             {
               "id": "step1",
@@ -1985,7 +2607,65 @@
                 }
               ]
             }
+          ],
+          "introSeq": [
+            {
+              "s": "panuelo",
+              "m": "normal",
+              "t": "最後だ！　0を先頭に置けるもんなら置いてみろ！"
+            },
+            {
+              "s": "vint",
+              "m": "think",
+              "t": "十の位に0はダメ。使えるカードを見極める。"
+            }
+          ],
+          "clearSeq": [
+            {
+              "s": "vint",
+              "m": "laugh",
+              "t": "4通り。これで封印は全部だ！"
+            },
+            {
+              "s": "panuelo",
+              "m": "defeat",
+              "t": "がっ……こ、降参だ……お前ら、ただ者じゃねえ……。"
+            }
           ]
+        }
+      ],
+      "opening": [
+        {
+          "s": "lynette",
+          "m": "normal",
+          "t": "いよいよブラックホールの縁。最後の封印は“場合の数”。数え上げよ。"
+        },
+        {
+          "s": "panuelo",
+          "m": "normal",
+          "t": "しつこいぞコソ泥！　最後は俺が直々に相手だ！"
+        },
+        {
+          "s": "vint",
+          "m": "smile",
+          "t": "諦めが悪いね、パヌエロ。"
+        }
+      ],
+      "ending": [
+        {
+          "s": "lynette",
+          "m": "happy",
+          "t": "やったわ……道が開いた。その先に、シンギュラリンゴが。"
+        },
+        {
+          "s": "vint",
+          "m": "smile",
+          "t": "行くぞ、ガット。お宝はすぐそこだ。"
+        },
+        {
+          "s": "gatt",
+          "m": "happy",
+          "t": "最後まで気を抜くなミャ！"
         }
       ]
     }
